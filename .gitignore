@@ -1,0 +1,27 @@
+# Build output
+software/*.o
+software/*.d
+software/xwax
+software/.version
+software/gmon.out
+hw_test/*.o
+hw_test/test_all_hw
+hw_test/test_tft_ui
+hw_test/mag_sensor_test
+
+# Arduino build output
+**/build/
+*.hex
+
+# Editors
+.vscode/
+*.code-workspace
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Local
+.claude/
+*.bak
