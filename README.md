@@ -30,6 +30,7 @@ ready-to-print STL files.
 ## Contents
 
 - [Features](#features)
+- [Photos](#photos)
 - [How it works](#how-it-works)
 - [Components](#components)
 - [Repository layout](#repository-layout)
@@ -57,6 +58,15 @@ ready-to-print STL files.
   network.
 - **Compact 3D-printed case**: 168 × 168 mm, a stepped top with flat decks,
   7 parts that print without supports and screw together with M2/M3 screws.
+
+## Photos
+
+| | |
+|---|---|
+| ![Prototype, top view](docs/images/prototype_top.jpg) | ![Prototype, platter and display](docs/images/prototype_side.jpg) |
+| *Prototype: platter, fader, display, knob and the four cue buttons* | *Hard disk platter on the bearing hub* |
+| ![Wiring inside the case](docs/images/prototype_wiring.jpg) | ![Arduino Nano](docs/images/prototype_arduino.jpg) |
+| *Inside: Pi + AudioInjector, DuPont wiring, platter axle* | *Arduino Nano reading the fader, touch and buttons* |
 
 ## How it works
 
