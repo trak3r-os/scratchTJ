@@ -9,7 +9,7 @@
 [![Language: C](https://img.shields.io/badge/language-C-00599C?logo=c&logoColor=white)](software/)
 [![Firmware: Arduino](https://img.shields.io/badge/firmware-Arduino%20Nano-00979D?logo=arduino&logoColor=white)](arduino_nano/)
 [![CAD: OpenSCAD](https://img.shields.io/badge/CAD-OpenSCAD-F9D72C?logo=openscad&logoColor=black)](enclosure/scratchtj_stepped.scad)
-[![3D printable](https://img.shields.io/badge/3D%20print-7%20parts%2C%20no%20supports-orange?logo=prusa3d&logoColor=white)](enclosure/README.md)
+[![3D printable](https://img.shields.io/badge/3D%20print-9%20parts%2C%20no%20supports-orange?logo=prusa3d&logoColor=white)](enclosure/README.md)
 [![Engine: xwax](https://img.shields.io/badge/engine-xwax-555555)](http://www.xwax.co.uk/)
 [![Based on SC1000](https://img.shields.io/badge/based%20on-SC1000-555555)](https://github.com/rasteri/SC1000)
 
@@ -57,7 +57,7 @@ ready-to-print STL files.
 - **FTP access** to the beats and samples folders from any computer on your
   network.
 - **Compact 3D-printed case**: 168 × 168 mm, a stepped top with flat decks,
-  7 parts that print without supports and screw together with M2/M3 screws.
+  9 parts that print without supports and screw together with M2/M3 screws.
 
 ## Photos
 
@@ -105,15 +105,15 @@ dimensions, the reason for each part, and the wiring:
 | AudioInjector Stereo sound card (WM8731 HAT) | Audio out (RCA + headphones) and line in for recording |
 | Arduino Nano (CH340 clone is fine) | Reads fader, touch sensor and cue buttons |
 | MT6701 magnetic angle sensor board (I2C) | Measures platter angle, 14 bit |
-| Small diametric disc magnet (2 mm thick) | Glued to the tip of the platter bolt, read by the MT6701 |
+| Small diametric disc magnet (Ø4 × 2 mm) | Glued to the tip of the platter bolt, read by the MT6701 |
 | ST7789 1.54" 240×240 SPI display with EC11 knob and key | Screen and menu controls on one board |
 | Innofader Mini Pro | Scratch fader |
 | 4 panel push buttons (7 mm) | Cue / settings buttons |
 | 95 mm metal platter (3.5" HDD platter) | The surface you scratch |
-| Ball bearing (18 mm OD × 6 mm), M5 × 27 bolt, M5 nut, washers | Platter axle |
+| 626ZZ ball bearing (6 × 19 × 6 mm), M6 pan-head bolt (25.5 mm under the head), M6 nut | Platter axle |
 | 1.2 kΩ resistor and a thin wire | Capacitive touch circuit |
 | M3 and M2 screws, DuPont jumper wires | Assembly |
-| 7 printed parts | [The enclosure](enclosure/README.md) |
+| 9 printed parts | [The enclosure](enclosure/README.md) |
 
 ## Repository layout
 
@@ -132,7 +132,7 @@ dimensions, the reason for each part, and the wiring:
 
 ## Quick start
 
-1. **Print the case**: the seven files in [`enclosure/stl/`](enclosure/stl/).
+1. **Print the case**: the nine files in [`enclosure/stl/`](enclosure/stl/).
    See [enclosure/README.md](enclosure/README.md) for print settings, screws
    and assembly order.
 2. **Wire it up**: follow the pin tables in [docs/HARDWARE.md](docs/HARDWARE.md#wiring).

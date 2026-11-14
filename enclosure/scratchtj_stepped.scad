@@ -22,12 +22,11 @@
 //              the low deck. Nothing presses on the board edges.
 //
 //   A stepped top cannot be one support-free print, so it is two flat
-//   plates. Both are screwed from above into the tray posts with M3
-//   (recessed pan heads by default, m3_head = "csk" for countersunk
-//   screws flush with the deck). The low deck also sits on a ledge of the riser, so it
+//   plates. Both are screwed from above into the tray posts with
+//   countersunk M3. The low deck also sits on a ledge of the riser, so it
 //   clamps the high deck along the whole step.
 //
-// >>> Values tagged MEASURE come from photos or datasheets, not calipers: check them before printing.
+// >>> Values tagged MEASURE come from photos / older files, not calipers.
 
 $fn = $preview ? 32 : 80;
 
@@ -35,7 +34,8 @@ $fn = $preview ? 32 : 80;
 // WHAT TO RENDER — change these, press F5
 // =====================
 // SHOW modes: "assembly" "exploded" "open" "section" "platter_section"
-//             "tray" "high" "low" "carrier" "hub" "spacer" "retainer" "print"
+//             "tray" "high" "low" "carrier" "carrier_v1" "hub" "spacer" "retainer" "clamp"
+//             "collar" "coupon" "print"
 SHOW          = "assembly";
 show_tray     = true;
 show_decks    = true;
@@ -80,13 +80,12 @@ dupont_bend  = 6.0;     // generous: room for fingers and wire slack
 // -- SCREWS: only M3 and M2 machine screws, threading straight into the
 // plastic. Pilots are drawn 0.2 over the tap size because printed holes
 // come out tight; the screw cuts its own thread and holds firmly.
-//   deck -> posts     M3 x 10 or 12   (10: 6 low deck, 4 high deck)
+//   deck -> posts     M3 x 10 or 12   (9 used)
 //   fader             M3 x 6          (2, into the fader's own threads)
 //   display carrier   M3 x 8          (4, carrier -> deck bosses)
 //   display board     M3 x 6 or 8     (4, board -> carrier posts)
 //   Pi                M2 x 6 or 8     (4)
 //   MT6701            M2 x 6          (up to 4)
-//   bearing retainer  M3 x 6          (3)
 m3_pilot     = 2.8;     // M3 thread-forming hole
 m3_clear     = 3.4;     // M3 passes freely
 m2_pilot     = 1.8;     // M2 thread-forming hole
@@ -119,61 +118,90 @@ posts_high = [
 //
 //   Section through the platter axis (deck coordinates, z = 0 = deck top):
 //
-//        ┌─┐  bolt head
-//   ═══════════  wide washer (metal: carries the touch signal to the platter)
-//   ━━━━┓   ┏━━━━  platter (25 mm hole), clamped on the hub flange
-//   ████┗┳━┳┛████  HUB: flange (platter rests on it) + spigot that centres the hole
-//        ┃ ┃       spacer: presses on the bearing INNER race only
-//   ▄▄▄▄ ┃ ┃ ▄▄▄▄  RETAINER ring, 3x M3: holds the outer race down, so the
-//  ━━━━┓▓┃ ┃▓┏━━━━  bearing can never come out the top
-//      ┃▓┃ ┃▓┃     bearing fully inside the seat (top flush with the deck)
-//      ┗┓┃ ┃┏┛     45-degree ledge under the outer race takes the push-down
-//        ┃ ┃       washer + nut (spin with the platter)
-//        ┃ ┃
-//        ▀▀▀       magnet glued on the bolt tip, 1 mm over the MT6701
+//          ┌┴┐        bolt head (M6 hex)
+//        ▄▀   ▀▄      TOP CAP: clamps the platter rim. Its thickness under the
+//   ━━━━┓       ┏━━━━  head sets how low the bolt tip (and magnet) reaches
+//   ████┗┳━━━━━┳┛████  HUB: flange (platter rests on it) + spigot that centres
+//        ┃     ┃       the 25 mm hole; bore snug on the M6
+//        ┃     ┃       SPACER: presses the bearing INNER race only (Ø8 tip)
+//   ▄▄▄▄ ┃     ┃ ▄▄▄▄  RETAINER, 3x M3: presses the OUTER race down. The
+//  ━━━━┓▓┃     ┃▓┏━━━━  bearing stands 0.2 proud, so the ring really clamps it
+//      ┃▓┃ 626 ┃▓┃     press-fit seat (Ø19.15, 45° lead-in at the mouth)
+//      ┗┓┃     ┃┏┛     flat 1 mm ledge under the outer race, then 45° cone
+//       ┃ ▀▀▀▀▀ ┃      COLLAR: Ø8 boss on the inner race only
+//       ┃ █████ ┃      M6 nut (threadlocker)
+//          ▀▀▀         magnet Ø4x2 glued on the bolt tip, 1 mm over the chip
 //
+// Inner race, spacer, hub, platter, cap, bolt, collar and nut are clamped
+// into one rigid rotor; the outer race is clamped between ledge and retainer.
 // Touch: wire up the groove in the seat wall, pinched by the outer race ->
-// balls -> inner race -> bolt -> wide washer -> platter.
+// balls -> inner race -> bolt -> wire under the head -> platter.
 plat_cx      = 113;
 plat_cy      = 84;
 plat_d       = 95;
 plat_th      = 1.0;     // measured
 plat_hole_d  = 25.0;    // measured
-brg_od       = 18.0;    // measured ("1.8 cm"). A 626 would be 19.0, check it
-brg_h        = 6.0;     // measured ("almost 6")
-brg_tol      = 0.15;
-brg_ledge    = 1.0;
-brg_inner_d  = 8.0;     // MEASURE inner race outer diameter: spacer contact
-nut_clear_d  = 13.0;
-nut_h        = 4.2;
-washer_h     = 1.6;     // washer under the bearing (small: <= 10 mm OD)
+// bearing 626ZZ (marked on it): 6 x 19 x 6
+brg_od       = 19.0;
+brg_id       = 6.0;
+brg_h        = 6.0;
+brg_seat_d   = 19.15;   // printed v4 without coupon: +0.15 for PETG/0.4 (holes print ~0.1 small) -> firm hand / clamp press
+brg_proud    = 0.2;     // bearing top above the deck (one 0.2 layer): the retainer presses it
+brg_ledge    = 1.0;     // flat ledge under the outer race (outer race face ~ Ø19 -> Ø17)
+brg_lead     = 0.6;     // 45° lead-in at the seat mouth: eats the elephant foot
+brg_inner_d  = 8.0;     // spacer / collar contact; inner race land is ~Ø9.5 (photo)
+nut_clear_d  = 14.0;    // the nut spins in here (M6 hex 11.05 across corners)
+// bolt: M6 pan head, one M6 nut ~4 mm (measured). Length: 25.5 under the
+// head (measured), but 27.1 overall with a ~2.5 head gives 24.6. Designed
+// for the LONGER one: a shorter bolt only lifts the magnet (gap ~1.9 at
+// 24.6, still in range), a longer one would hit the chip.
+bolt_d       = 6.0;
+bolt_shank   = 25.5;    // MEASURE: under the head -> tip
+bolt_shank_min = 24.6;  // other reading, only for the echo check
+bolt_head_h  = 2.5;     // MEASURE (pan head)
+bolt_head_d  = 12.0;    // MEASURE (pan head, mock only)
+hex_d        = 11.05;   // M6 nut across corners
+nut_h        = 4.0;     // MEASURE
+// collar under the bearing: Ø8 boss on the inner race, Ø12 base for the nut
+collar_d     = 12.0;
+collar_h     = 1.4;
+collar_boss_h= 0.6;
+// magnet + MT6701 (SOP-8 chip on the board, facing up)
+mag_d        = 4.0;
 mag_h        = 2.0;
-air_gap      = 1.0;
-// bolt: M5, 27 mm overall INCLUDING the head (measured)
-bolt_len     = 27.0;
-bolt_head_h  = 3.5;     // MEASURE (M5 hex head = 3.5)
-bolt_d       = 5.0;
-// wide washer on top of the platter. Must be > the 25 mm hole: M5 x 30
-top_washer_d = 30.0;
-top_washer_h = 1.5;     // MEASURE
+enc_chip_h   = 1.5;     // MEASURE: SOP-8 body is 1.35-1.75 tall
+mag_gap      = 1.0;     // magnet face -> chip top (MT6701 works at 0.5-2)
+// top cap (platter clamp)
+top_cap_d    = 34.0;
+cap_rim_h    = 1.2;     // thickness at the outer edge
+cap_top_d    = 18.0;    // the cap tapers up to this
+cap_rec_d    = 13.0;    // head pocket (M6 pan head is 10.5-12 wide)
+cap_rec_h    = 1.5;     // head pocket depth
+clamp_hole_r = bolt_d / 2 + 1.2;   // touch wire comes up here, under the bolt head
+clamp_hole_d = 1.3;
 // hub = platter support
 hub_flange_d = 60.0;    // platter rests on this
 hub_flange_h = 3.0;
-hub_spigot_d = plat_hole_d - 0.4;
-hub_spigot_h = plat_th - 0.3;   // below the platter top, so the washer clamps it
-hub_bore     = bolt_d + 0.3;
+hub_spigot_d = 24.8;    // printed v3 without coupon: platter drops over freely, ~0.1 play
+hub_spigot_h = plat_th - 0.3;   // below the platter top, so the cap clamps metal
+hub_bore     = 6.1;     // printed v3 without coupon: M6 snug (may thread in lightly) -> platter centred on the bolt
 hub_clear    = 0.8;     // free air between hub and the retainer screw heads
 spacer_d     = 12.0;
+spacer_bore  = 6.3;     // free: spacer and collar only push (spacer v2 is identical)
 // retainer ring over the bearing
 ret_th       = 2.0;
-ret_id       = brg_od - 2.4;     // overlaps the outer race 1.2 mm
+ret_id       = 17.0;    // over the outer race (Ø19 -> 17), clear of the shield (~Ø16.6)
 ret_od       = 34.0;
-ret_screw_r  = 12.5;
+ret_screw_r  = 13.0;
 ret_screw_ang= [90, 210, 330];   // clear of the touch-wire slit at 270
 ret_head_h   = (m3_head == "csk") ? 0 : 2.4;   // head above the ring
 hub_socket   = 1.0;     // spacer sits in a recess under the hub
 enc_boss_d   = 32.0;
 enc_spigot_h = 2.5;
+// Fixed by the tray v3 as printed (bandeja_v3.stl): MT6701 board top at
+// 27.2 and tube top at 34.15 above the table, with Hh = 43.
+boss_bot      = -8.65;  // boss underside (tube top + 0.2 gap)
+enc_pcb_top_d = -15.8;  // MT6701 board top, deck coordinates
 
 // -- CAPACITIVE TOUCH WIRE --
 cap_wire_w   = 2.5;
@@ -226,6 +254,13 @@ show_hdmi    = true;
 io_av_jack_x = 53.5;      // unused A/V jack: inner relief only
 // microSD, right wall: [board Y, height, width, height]
 io_sd        = [28.0, -0.8, 14, 2.8];
+// DuPonts on the AudioInjector GPIO header reach 35 mm above the table
+// (measured) and need room to bend. Instead of raising the deck, the high
+// deck gets a pocket in its underside over the header. Board coordinates.
+gpio_dupont_top = 35.0;      // MEASURE, from the table
+gpio_pocket_bx  = [3, 62];   // header runs X 7..58
+gpio_pocket_by  = [44, 61];  // header rows at Y 50..55; 61 stays clear of the platter boss
+gpio_pocket_h   = 2.0;       // leaves 1 mm of deck there
 
 // -- ARDUINO NANO (USB plug points to -X) --
 nano_cx      = 113;
@@ -261,6 +296,25 @@ car_rail_w   = 6.0;     // right-side rail joining the two end bars
 car_ear_dx   = 14.0;    // carrier screws, +/- X from the display centre
 car_ear_off  = 4.5;     // carrier screws, outside the board's short edges
 car_boss_d   = 7.0;     // deck bosses the carrier screws into
+
+// -- CARRIER FOR THE ALREADY PRINTED tapa_baja_v1 (bosses of the old clamp) --
+// The old deck has its bosses at +/-16, +/-38 from the display centre, 8 mm
+// tall, a 47.8 x 59.8 window and 4 pegs at +/-24, +/-30. The display wires
+// are soldered straight to the board (no DuPont), so the board can hang a
+// little lower: it screws onto the carrier posts with 4 x M3 x 8, and the
+// heads fit in the gap left above the board. Side walls close the slots the
+// wider window leaves beside the 41 mm board. The LEFT side stays fully
+// open (C shape): the board, with its wires already soldered, slides in
+// sideways and the wires never have to be threaded through anything.
+c1_boss_dx   = 16.0;
+c1_boss_y    = 38.0;
+c1_boss_h    = 8.0;
+c1_win_x     = 47.8;
+c1_peg_x     = 24.0;
+c1_peg_y     = 30.0;
+c1_peg_h     = 1.4;
+c1_gap       = 2.6;     // board top -> deck underside: M3 pan heads are 2.4 max
+c1_wall_gap  = 0.3;     // board edge -> side wall
 
 // -- PANEL BUTTONS --
 btn_x        = 24;
@@ -302,20 +356,21 @@ e = 0.05;
 dupont_stack = hdr_plastic + dupont_len + dupont_bend;
 
 // Bearing + platter stack, deck coordinates (z = 0 is the outside face)
-brg_seat_d  = brg_od + 2 * brg_tol;
-brg_top     = 0;                        // flush: the whole bearing is inside
-brg_bot     = brg_top - brg_h;
-cone_h      = (brg_seat_d - nut_clear_d) / 2 - brg_ledge;
-boss_bot    = brg_bot - cone_h - 1.0;
-hub_bot     = ret_th + ret_head_h + hub_clear;      // hub flange underside
+brg_top     = brg_proud;
+brg_bot     = brg_top - brg_h;                      // = the ledge
+function seat_cone_h(d) = (d - 2 * brg_ledge - nut_clear_d) / 2;
+hub_bot     = brg_top + ret_th + ret_head_h + hub_clear;   // hub flange underside
 spacer_h    = hub_bot - brg_top;
 plat_bot_d  = hub_bot + hub_flange_h;
 plat_top_d  = plat_bot_d + plat_th;
-head_bot    = plat_top_d + top_washer_h;            // under the bolt head
-bolt_tip    = head_bot - (bolt_len - bolt_head_h);
-mag_face    = bolt_tip - mag_h;
+// the magnet position is fixed by the tray v3; the cap fills what's left
+mag_face    = enc_pcb_top_d + enc_chip_h + mag_gap;
+bolt_tip    = mag_face + mag_h;
+head_bot    = bolt_tip + bolt_shank;                // under the bolt head
+cap_floor   = head_bot - plat_top_d;                // cap thickness under the head
+clamp_h     = cap_floor + cap_rec_h;                // cap total height
 thread_free = brg_bot - bolt_tip;
-enc_pcb_top_d = mag_face - air_gap;                 // MT6701 board top
+nut_bot     = brg_bot - collar_h - nut_h;
 
 h_need_enc  = floor_th - enc_groove + dupont_stack + enc_pcb_t - enc_pcb_top_d;
 h_need_pi   = floor_th + pi_standoff + pi_stack_top + pi_headroom + deck_th;
@@ -366,19 +421,31 @@ echo(str("Display: board top ", disp_gap, " mm under the deck, carrier bosses ",
 echo(str("M3 head room over the board: ", disp_gap + disp_head_h, " mm (pan / button heads are 1.7-2.4)"));
 echo(str("Header vs front carrier post: ", -disp_hy + car_post_d / 2 < hdr_y0 - 0.3 ? "clear" : "COLLIDES, the header channel bites the post",
          "   rear: ", disp_hy - car_post_d / 2 > hdr_y1 + 0.3 ? "clear" : "COLLIDES"));
-echo(str("Platter top: ", plat_bot + plat_th, " mm above the table"));
+echo(str("Platter: bottom ", plat_bot, ", top ", plat_bot + plat_th, " mm above the table (",
+         plat_bot_d, " / ", plat_top_d, " over the deck top)"));
+echo(str("Bearing 626: seat Ø", brg_seat_d, " x ", brg_h - brg_proud, " deep, top ", brg_proud,
+         " proud. Retainer ID ", ret_id, ", screws at r ", ret_screw_r));
+echo(str("Bolt M6 x ", bolt_shank, ": head underside ", head_bot, " over the deck, tip ", -bolt_tip,
+         " under it. Cap: ", cap_floor, " under the head, ", clamp_h, " total"));
+echo(str("Below the bearing: ", thread_free, " mm of thread for collar ", collar_h, " + nut ", nut_h,
+         " -> tip ", nut_bot - bolt_tip, " mm past the nut"));
+echo(str("Magnet face -> MT6701 chip top: ", mag_face - enc_pcb_top_d - enc_chip_h,
+         " mm (board top ", mag_face - enc_pcb_top_d, ")"));
+echo(str("If the bolt is ", bolt_shank_min, ": magnet gap ", mag_gap + bolt_shank - bolt_shank_min,
+         ", nut hangs ", max(0, (bolt_shank - bolt_shank_min) - (nut_bot - bolt_tip)), " past the tip"));echo(str("Tray v3 check: MT6701 board top ", enc_pcb_top, " (27.2), tube top ", enc_tube_top, " (34.15)"));
+echo(str("GPIO DuPonts: ", zh + gpio_pocket_h - gpio_dupont_top, " mm to bend under the pocket (",
+         zh - gpio_dupont_top, " without it), deck left there ", deck_th - gpio_pocket_h, " mm"));
 echo(str("Under MT6701: ", enc_under, " mm, straight DuPont + bend needs ", dupont_stack));
 echo(str("Free above the AudioInjector PCB: ", zh - (pi_z + 14.2), " mm"));
 echo(str("Free above the Nano board: ", zh - (floor_th + 3.6), " mm, DuPont + bend needs ", dupont_stack));
-echo(str("Bolt ", bolt_len, " mm: tip ", -bolt_tip, " mm under the deck top, thread below the bearing ",
-         thread_free, " mm (nut ", nut_h, " + washer ", washer_h, ")"));
-echo(str("Platter: ", plat_bot_d, " mm over the deck. Hub spacer ", spacer_h, " mm. Every mm cut off the bolt = 1 mm lower box"));
-if (thread_free < nut_h + washer_h)
-    echo("NOTE: no room for nut + washer below the bearing: fit the nut without washer");
-if (thread_free < nut_h)
-    echo("WARNING: bolt too short for the nut");
-if (top_washer_d < plat_hole_d + 3)
-    echo("WARNING: top washer barely covers the platter hole");
+if (nut_bot - bolt_tip < -0.5)
+    echo(str("WARNING: the nut hangs ", bolt_tip - nut_bot, " mm past the bolt tip"));
+if (cap_floor < 1.2)
+    echo("WARNING: bolt too long for the magnet gap: the cap has nothing left under the head");
+if (seat_cone_h(brg_seat_d) <= 0)
+    echo("WARNING: nut clearance wider than the ledge");
+if (top_cap_d < plat_hole_d + 3)
+    echo("WARNING: top cap barely covers the platter hole");
 if (enc_under < dupont_stack)
     echo("WARNING: high deck too low for a straight DuPont under the MT6701");
 if (Hh < h_need_pi)
@@ -534,28 +601,42 @@ module high_cuts() {
         rrect_c(fad_slot_x + 4, fad_relief_y, 2);
     for (sx = [-1, 1]) csk(fad_cx + sx * fad_m3_sp / 2, fad_cy);
 
-    // bearing seat (pressed in from outside, fully sunk: top flush with the
-    // deck), ledge cone, nut clearance
+    // bearing seat, collar + nut room, retainer pilots
     translate([plat_cx, plat_cy, 0]) {
-        translate([0, 0, brg_bot]) cylinder(d = brg_seat_d, h = brg_h + 1);
-        translate([0, 0, -0.4]) cylinder(d1 = brg_seat_d, d2 = brg_seat_d + 0.8, h = 0.4 + e);
-        translate([0, 0, brg_bot - cone_h])
-            cylinder(d1 = nut_clear_d, d2 = brg_seat_d - 2 * brg_ledge, h = cone_h + e);
+        seat_cut(brg_seat_d);
         translate([0, 0, boss_bot - enc_spigot_h - 1])
             cylinder(d = nut_clear_d, h = brg_bot - boss_bot + enc_spigot_h + 1);
         // retainer ring: 3x M3 thread-forming into the deck + boss
         for (a = ret_screw_ang) rotate([0, 0, a]) translate([ret_screw_r, 0, 0])
             pilot(m3_pilot, min(8, -boss_bot - 0.8));
         // capacitive-touch wire: in through a slit in the boss wall (outside
-        // the tube, clear of the spinning nut), then up a groove shallower
-        // than the wire, so the pressed-in outer race pinches it
-        rotate([0, 0, cap_wire_ang]) {
-            translate([brg_seat_d / 2 - 1, -cap_wire_w / 2, boss_bot + 1])
-                cube([cap_wire_d - 0.25 + 1, cap_wire_w, -boss_bot]);
+        // the tube, clear of the spinning nut), then up the seat groove
+        rotate([0, 0, cap_wire_ang])
             translate([brg_seat_d / 2 - 1, -cap_wire_w / 2, boss_bot + 1])
                 cube([enc_boss_d / 2, cap_wire_w, -deck_th - boss_bot - 1]);
-        }
     }
+
+    // room for the DuPonts on the GPIO header to bend (open towards the
+    // tray; printed face-down it's an open pocket, no supports)
+    translate([pix(gpio_pocket_bx[1]), piy(gpio_pocket_by[1]), -deck_th - e])
+        linear_extrude(gpio_pocket_h + e)
+            rrect(gpio_pocket_bx[1] - gpio_pocket_bx[0], gpio_pocket_by[1] - gpio_pocket_by[0], 2);
+}
+
+// Bearing seat, deck coordinates (z = 0 = deck top, cut goes down). Shared
+// by the deck and the fit coupon so the coupon tests exactly this shape.
+//   - press-fit bore, brg_h - brg_proud deep, with a 45° lead-in
+//   - flat ledge under the outer race, then a 45° cone (self-supporting
+//     when the deck prints face-down) down to the nut room
+//   - touch-wire groove up the wall, shallower than the wire, so the
+//     pressed-in outer race pinches it
+module seat_cut(d) {
+    ch = seat_cone_h(d);
+    translate([0, 0, brg_bot]) cylinder(d = d, h = brg_h + 1);
+    translate([0, 0, -brg_lead]) cylinder(d1 = d, d2 = d + 2 * brg_lead, h = brg_lead + e);
+    translate([0, 0, brg_bot - ch]) cylinder(d1 = nut_clear_d, d2 = d - 2 * brg_ledge, h = ch + e);
+    rotate([0, 0, cap_wire_ang]) translate([d / 2 - 1, -cap_wire_w / 2, boss_bot + 1])
+        cube([cap_wire_d - 0.25 + 1, cap_wire_w, -boss_bot]);
 }
 
 module high_keep2d() {
@@ -808,6 +889,43 @@ module carrier() {
     }
 }
 
+// ---- CARRIER for the old tapa_baja_v1. Local frame as carrier(): plate on
+// the bed at z = 0. Deck underside sits at z = car_th + c1_boss_h.
+module carrier_v1lid() {
+    zd   = car_th + c1_boss_h;                 // deck underside
+    ey0  = disp_hy;
+    ey1  = c1_boss_y + 3.5;
+    wx0  = disp_bx / 2 + c1_wall_gap;          // side wall, inner face
+    wx1  = c1_win_x / 2 + 1.0;                 // outer face, 1 mm under the deck
+    difference() {
+        union() {
+            linear_extrude(car_th) offset(r = 1.5) offset(delta = -1.5) union() {
+                for (sy = [-1, 1])
+                    translate([-wx1, sy < 0 ? -ey1 : ey0]) square([2 * wx1, ey1 - ey0]);
+                translate([wx0, -ey1]) square([wx1 - wx0, 2 * ey1]);    // right side only
+            }
+            for (sx = [-1, 1], sy = [-1, 1])
+                translate([sx * disp_hx, sy * disp_hy, 0]) hull() {
+                    cylinder(d = car_post_d, h = zd - c1_gap - disp_t);
+                    if (sx > 0) translate([wx0 - disp_hx, 0, 0]) cylinder(d = 3, h = zd - c1_gap - disp_t);
+                }
+            // right wall up to the deck underside, fills that window slot
+            translate([wx0, -c1_peg_y - 5, 0]) cube([wx1 - wx0, 2 * (c1_peg_y + 5), zd - 0.2]);
+        }
+        for (sx = [-1, 1], sy = [-1, 1])
+            translate([sx * c1_boss_dx, sy * c1_boss_y, -e]) cylinder(d = m3_clear, h = car_th + 2 * e);
+        // M3 pilots: board -> posts
+        for (sx = [-1, 1], sy = [-1, 1])
+            translate([sx * disp_hx, sy * disp_hy, -e]) cylinder(d = m3_pilot, h = zd);
+        // room for the deck's old pegs
+        for (sx = [-1, 1], sy = [-1, 1])
+            translate([sx * c1_peg_x, sy * c1_peg_y, zd - c1_peg_h - 0.6]) cylinder(d = 3.4, h = 5);
+        // header + DuPont channel
+        translate([-disp_bx / 2 + disp_hdr_x - 2.5, hdr_y0 - 0.3, -e])
+            cube([5, hdr_y1 - hdr_y0 + 0.6, zd + 2]);
+    }
+}
+
 // Carrier in deck coordinates.
 module carrier_placed() {
     translate([disp_cx, disp_cy, car_bot]) carrier();
@@ -815,8 +933,9 @@ module carrier_placed() {
 
 // ---- PLATTER HUB (platter support). Printed flange on the bed, spigot up:
 // no supports. The platter drops over the spigot and rests on the flange;
-// the wide washer under the bolt head clamps it (spigot is 0.3 mm lower
-// than the platter top so the washer always presses metal on metal).
+// the top cap clamps it (spigot is 0.3 mm lower than the platter top so the
+// cap always presses on the metal). Bore snug on the M6: it centres the
+// platter on the bolt.
 module platter_hub() {
     difference() {
         union() {
@@ -842,7 +961,20 @@ module hub_spacer() {
             cylinder(d = spacer_d, h = spacer_len - 0.8);
             cylinder(d = brg_inner_d, h = spacer_len);
         }
-        translate([0, 0, -1]) cylinder(d = hub_bore, h = spacer_len + 2);
+        translate([0, 0, -1]) cylinder(d = spacer_bore, h = spacer_len + 2);
+    }
+}
+
+// ---- COLLAR: under the bearing, on the bolt, then the nut. The Ø8 boss
+// touches only the inner race; the nut bears on the Ø12 base. Printed base
+// on the bed.
+module lower_collar() {
+    difference() {
+        union() {
+            cylinder(d = collar_d, h = collar_h - collar_boss_h);
+            cylinder(d = brg_inner_d, h = collar_h);
+        }
+        translate([0, 0, -1]) cylinder(d = spacer_bore, h = collar_h + 2);
     }
 }
 
@@ -861,12 +993,96 @@ module bearing_retainer() {
     }
 }
 
-// Hub + spacer + retainer in deck coordinates.
+// ---- TOP CAP: clamps the platter on its rim (r 12.5..17). Its thickness
+// under the head (cap_floor) is what sets the bolt tip, so the magnet lands
+// mag_gap over the MT6701 chip with this 25.5 mm bolt. Too close or too far
+// on the real thing: reprint only this cap, 1 mm thicker = magnet 1 mm up.
+// Plastic doesn't conduct, so a stripped wire carries the touch signal: one
+// end up through the small hole and pinched under the bolt head (touching
+// the shank in the little slot), the other end in the underside groove,
+// pinched against the platter top. Printed underside (groove) on the bed.
+//
+//            head pocket
+//          ___|      |___
+//        _/   |      |   \_     <- clamp_h
+//     __/     |..wire|     \__
+//    |________^______________|  <- cap_rim_h
+//    =========groove==========  platter
+module platter_clamp() {
+    g = cap_wire_d - 0.25;                       // groove shallower than the wire
+    rim = plat_hole_d / 2 + 3.5;
+    difference() {
+        hull() {
+            cylinder(d = top_cap_d, h = cap_rim_h);
+            cylinder(d = cap_top_d, h = clamp_h);
+        }
+        translate([0, 0, -1]) cylinder(d = spacer_bore, h = clamp_h + 2);
+        translate([0, 0, cap_floor]) cylinder(d = cap_rec_d, h = clamp_h);
+        // wire: hole, slot to the shank on the pocket floor, groove underneath
+        translate([clamp_hole_r, 0, -1]) cylinder(d = clamp_hole_d, h = clamp_h + 2);
+        translate([0, -0.5, cap_floor - g]) cube([clamp_hole_r, 1.0, g + 1]);
+        translate([clamp_hole_r, -0.6, -1]) cube([rim - clamp_hole_r, 1.2, 1 + g]);
+    }
+}
+
+// ---- FIT COUPON. Print it with the same filament and settings as the deck.
+// Part 1: the deck's bearing seat in 4 bores, printed the same way (deck
+// face on the bed). Notches on the outside: 1 = 19.0 ... 4 = 19.3.
+// Part 2: hub test. Steps for the platter hole (bottom 25.0 -> top 24.6,
+// the platter stops on the first step it doesn't pass) and 3 bolt holes
+// (dots on the base: 1 = 6.0, 2 = 6.1, 3 = 6.2).
+coupon_seats   = [19.0, 19.1, 19.2, 19.3];
+coupon_spigots = [25.0, 24.9, 24.8, 24.7, 24.6];
+coupon_bores   = [6.0, 6.1, 6.2];
+coupon_pitch   = 32;
+function coupon_pos(i) = [(i % 2) * coupon_pitch, floor(i / 2) * coupon_pitch, 0];
+
+module fit_coupon_seats() {
+    cd = 30;
+    difference() {
+        union() {
+            for (i = [0 : 3]) translate(coupon_pos(i)) cylinder(d = cd, h = -boss_bot);
+            linear_extrude(1.6) hull() for (i = [0 : 3]) translate(coupon_pos(i)) circle(d = 16);
+        }
+        for (i = [0 : 3]) translate(coupon_pos(i)) {
+            mirror([0, 0, 1]) seat_cut(coupon_seats[i]);   // deck z -> print z
+            translate([0, 0, -1]) cylinder(d = nut_clear_d, h = -boss_bot + 2);
+            for (k = [0 : i]) rotate([0, 0, 225 + (k - i / 2) * 12])
+                translate([cd / 2, 0, -1]) cylinder(d = 1.6, h = -boss_bot + 2, $fn = 12);
+        }
+    }
+}
+
+module fit_coupon_hub() {
+    st = 0.8;   // step height
+    base = 1.2;
+    difference() {
+        union() {
+            cylinder(d = 30, h = base);
+            for (i = [0 : len(coupon_spigots) - 1])
+                translate([0, 0, base + i * st - e]) cylinder(d = coupon_spigots[i], h = st + e);
+        }
+        for (j = [0 : 2]) rotate([0, 0, j * 120]) {
+            translate([7, 0, -1]) cylinder(d = coupon_bores[j], h = base + 5 * st + 2);
+            for (k = [0 : j]) rotate([0, 0, (k - j / 2) * 9])
+                translate([13.8, 0, base - 0.6]) cylinder(d = 1.2, h = 1, $fn = 12);
+        }
+    }
+}
+
+module fit_coupon() {
+    fit_coupon_seats();
+    translate([coupon_pitch + 42, coupon_pitch / 2, 0]) fit_coupon_hub();
+}
+
+// Hub + spacer + retainer + collar + cap in deck coordinates.
 module platter_parts_placed() {
     translate([plat_cx, plat_cy, 0]) {
-        color("Ivory") bearing_retainer();
+        color("Ivory") translate([0, 0, brg_top]) bearing_retainer();
+        color("Orange") translate([0, 0, brg_bot - collar_h]) lower_collar();
         color("Orange") translate([0, 0, brg_top + spacer_len]) mirror([0, 0, 1]) hub_spacer();
         color("CornflowerBlue") translate([0, 0, hub_bot]) platter_hub();
+        color("Ivory") translate([0, 0, plat_top_d]) platter_clamp();
     }
 }
 
@@ -888,6 +1104,9 @@ module mock_pi() {
         color("#222") translate([pi_bx - 58, 1, 1.6]) cube([51, 5, 11]);
         color("RoyalBlue") translate([pi_bx - 65, 0, 12.6]) cube([65, pi_by, 1.6]);
     }
+    // DuPonts on the AudioInjector GPIO header (pin-1 end), up to the measured top
+    color("#222") translate([pix(30), piy(55), pi_z + 14.2])
+        cube([23, 5, gpio_dupont_top - pi_z - 14.2]);
     for (c = io_back_hat)
         color(c[2] > 10 ? "Crimson" : "DimGray")
             translate([pix(c[0]), pi_oy - 6, pi_z + c[1]]) rotate([-90, 0, 0])
@@ -944,23 +1163,22 @@ module mock_high() {
     translate([plat_cx, plat_cy, 0]) {
         color("Yellow") translate([0, 0, brg_bot]) difference() {
             cylinder(d = brg_od, h = brg_h);
-            translate([0, 0, -1]) cylinder(d = 5, h = brg_h + 2);
+            translate([0, 0, -1]) cylinder(d = brg_id, h = brg_h + 2);
         }
         color("Silver") {
             translate([0, 0, bolt_tip]) cylinder(d = bolt_d, h = head_bot - bolt_tip);
-            translate([0, 0, head_bot]) cylinder(d = 9.2, h = bolt_head_h, $fn = 6);
+            translate([0, 0, head_bot]) hull() {          // pan head
+                cylinder(d = bolt_head_d, h = bolt_head_h * 0.4);
+                cylinder(d = bolt_head_d * 0.75, h = bolt_head_h);
+            }
         }
-        color("Red") translate([0, 0, mag_face]) cylinder(d = 4, h = mag_h);
-        color("DimGray") {
-            translate([0, 0, brg_bot - washer_h]) cylinder(d = 10, h = washer_h);
-            translate([0, 0, brg_bot - washer_h - nut_h]) cylinder(d = 9.2, h = nut_h, $fn = 6);
-        }
-        color("Silver") translate([0, 0, plat_top_d]) cylinder(d = top_washer_d, h = top_washer_h);
+        color("Red") translate([0, 0, mag_face]) cylinder(d = mag_d, h = mag_h);
+        color("DimGray") translate([0, 0, nut_bot]) cylinder(d = hex_d, h = nut_h, $fn = 6);
         color("Gainsboro", 0.8) translate([0, 0, plat_bot_d]) difference() {
             cylinder(d = plat_d, h = plat_th);
             translate([0, 0, -1]) cylinder(d = plat_hole_d, h = plat_th + 2);
         }
-        for (a = ret_screw_ang) color("Silver") rotate([0, 0, a]) translate([ret_screw_r, 0, ret_th])
+        for (a = ret_screw_ang) color("Silver") rotate([0, 0, a]) translate([ret_screw_r, 0, brg_top + ret_th])
             cylinder(d = 5.5, h = ret_head_h > 0 ? ret_head_h : 0.1);
         color("Chocolate") rotate([0, 0, cap_wire_ang]) {
             translate([brg_od / 2, -1, boss_bot + 1.5]) cube([0.8, 2, brg_top - boss_bot - 2]);
@@ -972,7 +1190,7 @@ module mock_high() {
 module mock_encoder_fixed() {
     translate([plat_cx, plat_cy, 0]) rotate([0, 0, enc_rot]) {
         color("Green") translate([-enc_pcb / 2, -enc_pcb / 2, enc_pcb_bot]) cube([enc_pcb, enc_pcb, enc_pcb_t]);
-        color("#111") translate([-2.5, -2.5, enc_pcb_top]) cube([5, 5, 0.8]);
+        color("#111") translate([-2.5, -2, enc_pcb_top]) cube([5, 4, enc_chip_h]);   // SOP-8
         translate([0, -enc_pcb / 2 + 1.3, enc_pcb_bot]) mock_dupont(5);
     }
 }
@@ -1041,9 +1259,13 @@ if (SHOW == "tray")  tray();
 if (SHOW == "high")  translate([-x_step, box_y, 0]) rotate([180, 0, 0]) high_deck();   // outside face on the bed
 if (SHOW == "low")   translate([0, box_y, 0]) rotate([180, 0, 0]) low_deck();          // outside face on the bed
 if (SHOW == "carrier") carrier();
+if (SHOW == "carrier_v1") carrier_v1lid();
 if (SHOW == "hub")      platter_hub();
 if (SHOW == "spacer")   hub_spacer();
 if (SHOW == "retainer") bearing_retainer();
+if (SHOW == "clamp")    platter_clamp();      // underside (groove) on the bed
+if (SHOW == "collar")   lower_collar();
+if (SHOW == "coupon")   fit_coupon();         // print this first
 if (SHOW == "platter_section")   // close-up cut through the platter axis
     intersection() {
         assembly();
@@ -1058,4 +1280,7 @@ if (SHOW == "print") {
     translate([box_x + 60, -50, 0]) platter_hub();
     translate([box_x + 110, -50, 0]) hub_spacer();
     translate([box_x + 140, -50, 0]) bearing_retainer();
+    translate([box_x + 180, -50, 0]) platter_clamp();
+    translate([box_x + 210, -50, 0]) lower_collar();
+    translate([box_x + 60, -140, 0]) fit_coupon();
 }

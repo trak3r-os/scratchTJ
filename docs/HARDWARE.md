@@ -85,9 +85,9 @@ drift), reads zero noise when the platter is still, and a read takes under a
 millisecond at 100 kHz I2C. It needs only a magnet and a correct air gap,
 which the bearing keeps constant.
 
-You also need a small **diametrically magnetised disc magnet** (2 mm thick,
-small enough to sit on the end of an M5 bolt). These are usually sold together
-with MT6701 boards.
+You also need a small **diametrically magnetised disc magnet**, **Ø4 × 2 mm**,
+glued to the end of the M6 bolt. These are usually sold together with MT6701
+boards.
 
 ### Display module: ST7789 1.54" 240×240 + EC11 knob + key
 
@@ -122,13 +122,13 @@ yellow and blue.
 | Part | Size | Notes |
 |------|------|-------|
 | Platter | 95 mm diameter, 1 mm thick, 25 mm centre hole | An aluminium platter from a 3.5" hard disk is ideal: flat, balanced and conductive |
-| Ball bearing | 18 mm OD × 6 mm | Press fit into the high deck, flush with the top |
-| Bolt | M5 × 27 mm overall (hex head) | The axle. It turns with the platter |
-| Wide washer | M5 × 30 mm OD, **metal** | Clamps the platter and carries the touch signal into it |
-| Small washer | M5, under 10 mm OD | Under the bearing |
-| Nut | M5 | Locks the bolt to the bearing inner race |
+| Ball bearing | **626ZZ**, 6 × 19 × 6 mm | Press fit into a Ø19.15 seat in the high deck, 0.2 mm proud |
+| Bolt | **M6 pan head**, 25.5 mm under the head (about 27 mm overall) | The axle. It turns with the platter |
+| Nut | M6, 4 mm thick | Under the bearing, locks the bolt to the inner race |
+| Magnet | Ø4 × 2 mm, diametric | Glued to the bolt tip, 1 mm over the MT6701 chip |
 
-The printed hub, spacer and bearing retainer complete the stack; see the
+The printed hub, spacer, bearing retainer, bearing collar and platter cap
+(which replaces a wide washer) complete the stack; see the
 [platter stack in the enclosure guide](../enclosure/README.md#platter-stack).
 
 ### Small parts
@@ -237,7 +237,8 @@ slipmat-style pull back to speed.
                            │       pinched against the bearing outer race)
                      bearing outer race → balls → inner race
                            │
-                     M5 bolt → wide metal washer → platter
+                     M6 bolt → short stripped wire (under the bolt head,
+                           │       in the groove under the cap) → platter
                            │
                      your hand (body capacitance)
 ```
@@ -251,8 +252,10 @@ touched.
 There is no slip ring: the signal goes through the bearing itself. The wire
 lies in a vertical groove in the bearing seat and the bearing presses it
 against the plastic, and from there the path is metal to metal up to the
-platter. The wide washer under the bolt head must be metal and must touch the
-platter.
+platter. The printed top cap is plastic, so a short stripped wire carries the
+signal from the bolt to the platter: one end pinched under the bolt head, the
+other in the groove on the underside of the cap, pressed against the platter
+top.
 
 **Keep your hands off the platter for the first two seconds after start-up.**
 The serial port resets the Arduino when xwax opens it, and the touch baseline
@@ -268,10 +271,10 @@ platter then counts as touched and a platter held still is released after
 
 ```
    platter  ═══════════════════
-   bolt          ┃  turns with the platter
-   bearing      ▓┃▓
-   nut           ┃
-   magnet        ▀   glued to the bolt tip
+   bolt          ┃  turns with the platter (M6)
+   bearing      ▓┃▓   626ZZ
+   collar + nut  ┃
+   magnet        ▀   Ø4 x 2, glued to the bolt tip
                   1 mm air gap
    MT6701  ▬▬▬▬▬▬▬▬▬  fixed in the tray
 ```
@@ -281,6 +284,10 @@ platter then counts as touched and a platter held still is released after
 - Centre it on the bolt and glue it flat; keep the chip right under the axis.
 - The bearing holds the gap constant through the whole turn. The model sets
   the gap to 1 mm.
+- The gap is set by the bolt length and the thickness of the printed top cap.
+  The model assumes a 25.5 mm bolt (under the head); with a 24.6 mm bolt the
+  gap is 1.9 mm, still in the sensor's range. If it is wrong on the real
+  thing, reprint only the cap (1 mm thicker moves the magnet 1 mm up).
 - The Pi converts angle changes into playback position. The ratio is the
   `platterspeed` parameter; the default 9100 is set for this sensor.
 

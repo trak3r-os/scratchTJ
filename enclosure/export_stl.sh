@@ -12,6 +12,8 @@ declare -A PARTS=(
   [hub]=05_platter_hub
   [spacer]=06_hub_spacer
   [retainer]=07_bearing_retainer
+  [clamp]=08_platter_cap
+  [collar]=09_bearing_collar
 )
 for mode in "${!PARTS[@]}"; do
   out="stl/${PARTS[$mode]}.stl"
