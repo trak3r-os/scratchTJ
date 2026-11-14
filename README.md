@@ -68,6 +68,18 @@ ready-to-print STL files.
 | ![Wiring inside the case](docs/images/prototype_wiring.jpg) | ![Arduino Nano](docs/images/prototype_arduino.jpg) |
 | *Inside: Pi + AudioInjector, DuPont wiring, platter axle* | *Arduino Nano reading the fader, touch and buttons* |
 
+### The new 3D-printed case
+
+Renders of the stepped 9-part case (details and print settings in
+[enclosure/README.md](enclosure/README.md)).
+
+| | |
+|---|---|
+| ![Case, exploded view](enclosure/images/exploded.png) | ![Case, cross-section](enclosure/images/section.png) |
+| *The nine printed parts* | *Section through the platter axle and the electronics tray* |
+| ![Platter stack, exploded](enclosure/images/platter_exploded.png) | ![Platter stack, section](enclosure/images/platter_section.png) |
+| *Platter stack: 626ZZ bearing, M6 bolt, top cap, magnet* | *Platter stack in section* |
+
 ## How it works
 
 ```
