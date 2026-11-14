@@ -577,8 +577,8 @@ void function_mode_set(FunctionMode mode) {
     mode_reset_pending = true;
 }
 
-/* Arduino bit → button index (A0 red, A1 yellow, A2 blue, A3 green) */
-static const int cue_pin_map[4] = {BTN_RED, BTN_YELLOW, BTN_BLUE, BTN_GREEN};
+/* Arduino bit → button index (A0 yellow, A1 red, A2 blue, A3 green) */
+static const int cue_pin_map[4] = {BTN_YELLOW, BTN_RED, BTN_BLUE, BTN_GREEN};
 
 static void cue_jump(int i, int ad) {
     double pos = cues_get(&deck[ad].cues, i);

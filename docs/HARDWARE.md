@@ -174,8 +174,8 @@ The printed hub, spacer, bearing retainer, bearing collar and platter cap
  Innofader      out ────►│ A5                                                 │
                 VCC ◄────│ 5V                                                 │
                 GND ─────│ GND                                                │
- Red (mode)     ────────►│ A0  ─┐                                             │
- Yellow button  ────────►│ A1   │ other side of each button to GND           │
+ Yellow button  ────────►│ A0  ─┐                                             │
+ Red (mode)     ────────►│ A1   │ other side of each button to GND           │
  Blue button    ────────►│ A2   │                                             │
  Green button   ────────►│ A3  ─┘                                             │
                          │ D10 ──[ 1.2 kΩ ]──┐                                │
@@ -212,8 +212,8 @@ and `software/oled_display.c` (display DC / RES).
 | Pin | Connects to | Notes |
 |-----|-------------|-------|
 | A5 | Fader output | 10-bit analog |
-| A0 | Red button (mode) | To GND when pressed, internal pull-up |
-| A1 | Yellow button | " |
+| A0 | Yellow button | To GND when pressed, internal pull-up |
+| A1 | Red button (mode) | " |
 | A2 | Blue button | " |
 | A3 | Green button | " |
 | D10 | Touch send | Through the 1.2 kΩ resistor to D12 |
