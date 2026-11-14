@@ -47,12 +47,12 @@ ready-to-print STL files.
 - **Touch-sensitive platter**: capacitive sensing through the bearing tells the
   software when your hand is on the platter, as on a real turntable.
 - **Scratch fader**: an Innofader Mini Pro (hall effect, short throw) read by
-  an Arduino Nano. It cuts like an SC1000 (adjustable open/close points, cut
-  beats) or follows an adjustable crossfade curve.
+  an Arduino Nano. It follows an adjustable crossfade curve (a sharp cut by
+  default) or cuts like an SC1000 (adjustable open/close points, cut beats).
 - **240×240 colour display + rotary knob**: live platter view with a 2-second
   waveform around the playhead, file browser, recording, and a screen saver.
-- **SC1000 / SC500 feel out of the box**: the same `scsettings.txt` and the same
-  defaults. Every setting can be changed live from the Config menu, and each
+- **SC1000 / SC500 platter feel out of the box**: the same `scsettings.txt`
+  and the same platter defaults. Every setting can be changed live from the Config menu, and each
   one is explained on screen and in [docs/SETTINGS.md](docs/SETTINGS.md).
 - **4 coloured buttons**: red switches between three modes for the other
   three. **CUE**: three cue points (tap to jump, hold to set). **SETTINGS**:

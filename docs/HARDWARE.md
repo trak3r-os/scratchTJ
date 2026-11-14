@@ -248,7 +248,7 @@ slipmat-style pull back to speed.
 The `CapacitiveSensor` library sends a pulse on D10 and times how long D12
 takes to follow through the resistor. A hand on the platter adds capacitance,
 so the time goes up sharply. The firmware takes one sample per loop and
-reports the sum of the last 30. The Pi treats a value **above 5000** as
+reports the sum of the last 30. The Pi treats a value **above 22500** as
 touched. You can change this in *Config → Platter → Touch threshold*: the edit
 screen shows the live sensor value, so you can read it with your hand off and
 on the platter and set the threshold halfway between.

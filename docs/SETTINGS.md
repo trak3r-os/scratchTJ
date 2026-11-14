@@ -2,7 +2,7 @@
 
 This guide explains every setting on the ScratchTJ: what it does, when to change it, and what the SC1000 / SC500 uses.
 
-Out of the box, ScratchTJ plays like an SC1000 / SC500. The extras ScratchTJ adds (Speed assist, Touch by motion, the Curve fader, Fader smoothing and Soft clip) all start **off**, so you can turn them on one at a time and hear what each one does.
+Out of the box, the platter plays like an SC1000 / SC500. The fader starts in **Curve** mode, set to a sharp cut (one end cuts the beats, the other the sample); set *Fader mode* to SC1000 cut for the SC1000 fader. The other extras ScratchTJ adds (Speed assist, Touch by motion, Fader smoothing and Soft clip) all start **off**, so you can turn them on one at a time and hear what each one does.
 
 ---
 
@@ -52,7 +52,7 @@ ScratchTJ works out each setting's value in three layers. Each layer overrides t
 |---------|---------|--------------|
 | Platter speed | 9100 | How far you turn the platter for one second of sound. |
 | Reverse platter | On | Flips the platter's direction. |
-| Touch threshold | 5000 | The touch-sensor reading above which a hand counts as on the platter. |
+| Touch threshold | 22500 | The touch-sensor reading above which a hand counts as on the platter. |
 | Touch by motion | Off | Treats a turning platter as touched. Only for a broken touch sensor. |
 | Slipmat | 200 | How fast the record gets back to speed when you let go. |
 | Brake length | 3000 | How long the stop button takes to stop the track. |
@@ -151,13 +151,13 @@ Very occasionally the platter sensor returns a bad reading. A reading that jumps
 
 | Setting | Default | What it does |
 |---------|---------|--------------|
-| Fader mode | SC1000 cut | SC1000-style hard cut, or a ScratchTJ crossfade curve. |
+| Fader mode | Curve | SC1000-style hard cut, or a ScratchTJ crossfade curve. |
 | Cut beats | Off | Which end of the fader (if any) cuts the beats. |
 | Open point | 5 | How far from the end the fader must move before the sound comes in. |
 | Close point | 3 | How close to the end the fader must come to cut the sound again. |
 | Fader direction | Normal | Swaps the two ends of the fader. |
-| Curve width | 0.10 | Curve mode: fader travel to full volume. |
-| Curve shape | 0.20 | Curve mode: how the volume rises. |
+| Curve width | 0.01 | Curve mode: fader travel to full volume. |
+| Curve shape | 0.09 | Curve mode: how the volume rises. |
 | Fader smoothing | Off | Fades the volume over a few milliseconds instead of jumping. |
 | Soft clip | Off | Rounds off peaks when the volume is boosted past 100%. |
 
@@ -169,7 +169,7 @@ The deck names used below:
 ### Fader mode
 
 - **SC1000 cut** works like the SC1000 and SC500. The beats always play. The sample plays at full volume anywhere along the fader and is cut only at the very ends, like a scratch mixer with a sharp cut-in. **Cut beats**, **Open point** and **Close point** shape this mode.
-- **Curve** is a ScratchTJ extra. One end of the fader cuts the beats, the other end cuts the sample, and in between the volume follows a curve set by **Curve width** and **Curve shape**. This is how ScratchTJ behaved before the SC1000 mode was added.
+- **Curve** is a ScratchTJ extra. One end of the fader cuts the beats, the other end cuts the sample, and in between the volume follows a curve set by **Curve width** and **Curve shape**. This is how ScratchTJ behaved before the SC1000 mode was added, and it is the default, with Curve width 0.01 and Curve shape 0.09: a sharp cut right at the ends.
 
 ### Cut beats
 

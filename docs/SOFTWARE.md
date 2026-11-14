@@ -114,7 +114,7 @@ Arduino → Pi, 7 bytes per packet, sent continuously at 500 000 baud:
   whose checksum does not match. The port is opened in low-latency mode.
 - **Touch value:** sum of the last 30 single capacitive samples (one sample per
   loop), clamped to 16 bits. The Pi treats a value above *Touch threshold* (default
-  5000) as touched.
+  22500) as touched.
 - **Fader:** read with `analogRead` while the previous packet is on the wire.
 - The firmware waits for each packet to finish (`Serial.flush()`) before the
   next touch sample, so the transmit interrupt cannot disturb the measurement

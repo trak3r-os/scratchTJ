@@ -2,9 +2,11 @@
  * Runtime settings: defaults, ranges and the plain-English help shown
  * in the Config menu. See settings.h and docs/SETTINGS.md.
  *
- * Defaults follow the SC1000/SC500. Everything ScratchTJ adds on top
- * (speed assist, touch by motion, curve fader, fader smoothing, soft
- * clip) starts switched off, so a fresh unit plays like an SC1000.
+ * Platter defaults follow the SC1000/SC500, so a fresh unit scratches
+ * like an SC1000. The fader starts in Curve mode set to a sharp cut
+ * (width 0.01, shape 0.09); the SC1000 cut mode is one menu change away.
+ * The other extras (speed assist, touch by motion, fader smoothing, soft
+ * clip) start switched off.
  *
  * The config keys (the first field) are what config.cfg and presets
  * store: do not rename them, or saved settings stop loading.
@@ -17,7 +19,7 @@
 /* Platter */
 float cfg_platterspeed = 9100.0f;
 float cfg_jogreverse = 1.0f;
-float cfg_touch_threshold = 5000.0f;
+float cfg_touch_threshold = 22500.0f;
 float cfg_motion_touch = 0.0f;
 float cfg_slippiness = 200.0f;
 float cfg_brakespeed = 3000.0f;
@@ -27,13 +29,13 @@ float cfg_vel_ff = 0.0f;
 float cfg_blipthreshold = 400.0f;
 
 /* Fader & Volume */
-float cfg_fader_mode = FADER_MODE_SC1000;
+float cfg_fader_mode = FADER_MODE_CURVE;
 float cfg_cutbeats = 0.0f;
 float cfg_fader_open = 5.0f;
 float cfg_fader_close = 3.0f;
 float cfg_fader_switch = 1.0f;
-float cfg_curve_factor = 0.1f;
-float cfg_curve_power = 0.2f;
+float cfg_curve_factor = 0.01f;
+float cfg_curve_power = 0.09f;
 float cfg_fader_smooth = 0.0f;
 float cfg_soft_clip = 0.0f;
 

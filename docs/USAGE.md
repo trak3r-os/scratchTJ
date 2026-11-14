@@ -161,8 +161,8 @@ when the Pi reboots. Copy the ones you want to keep.
 
 ## Settings
 
-ScratchTJ starts out playing like an SC1000 / SC500, and the extras it adds all
-start switched off. Every setting can be changed while you play, from
+The platter starts out playing like an SC1000 / SC500, and the fader in Curve
+mode with a sharp cut. The other extras ScratchTJ adds start switched off. Every setting can be changed while you play, from
 *Config → Platter*, *Config → Fader & Volume* and *Config → Screen*:
 
 | Section | Settings |
