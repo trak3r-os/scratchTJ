@@ -68,7 +68,7 @@ static const SettingInfo settings[] = {
     },
     {
         .name = "touch_threshold", .valuePtr = &cfg_touch_threshold,
-        .minValue = 100, .maxValue = 65000, .stepSize = 100,
+        .minValue = 500, .maxValue = 65000, .stepSize = 500,
         .kind = VAR_NUMBER, .decimals = 0,
         .section = SECTION_PLATTER, .label = "Touch threshold",
         .help = "Touch sensor reading above which your hand counts as "

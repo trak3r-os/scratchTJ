@@ -307,7 +307,7 @@ Settings that also appear in the Config menu only give the **default** here. A v
 |-----|-----------|-------|
 | `platterspeed` | Platter > Platter speed | 1000 – 32768 |
 | `jogreverse` | Platter > Reverse platter | 0 / 1 |
-| `touch_threshold` | Platter > Touch threshold | 100 – 65000 |
+| `touch_threshold` | Platter > Touch threshold | 500 – 65000 (steps of 500) |
 | `motion_touch` | Platter > Touch by motion | 0 Off / 1 On / 2 Motor |
 | `motion_threshold` | Platter > Motion threshold | 0.25 – 10 (degrees) |
 | `slippiness` | Platter > Slipmat | 1 – 3000 |
