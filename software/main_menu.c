@@ -118,13 +118,13 @@ static void draw_mode_overlay(void) {
     char label[24], sub[32];
     uint16_t color;
     if (mode_overlay_is_mode) {
-        /* Yellow was pressed: the new button mode and what it does */
+        /* The mode button was pressed: the new mode and what it does */
         color = function_mode_color(mode);
         snprintf(label, sizeof(label), "%s", function_mode_name(mode));
         if (mode == FUNC_MODE_SETTINGS)
-            snprintf(sub, sizeof(sub), "Hold+spin: Pitch Speed Vol");
+            snprintf(sub, sizeof(sub), "Hold+spin: Vol Pitch Speed");
         else if (mode == FUNC_MODE_PLAY)
-            snprintf(sub, sizeof(sub), "Sample < >  Beat play/stop");
+            snprintf(sub, sizeof(sub), "< Sample   Beat   Sample >");
         else
             snprintf(sub, sizeof(sub), "Tap: jump   Hold: set cue");
     } else {
@@ -145,10 +145,12 @@ static void draw_mode_overlay(void) {
 }
 
 static const char *settings_param_labels[4] = {
-    "PITCH", "SPEED", NULL, "VOLUME"   /* yellow is the mode button */
+    [BTN_SET_PITCH] = "PITCH",
+    [BTN_SET_SPEED] = "SPEED",
+    [BTN_SET_VOLUME] = "VOLUME",
 };
 static const char *settings_param_names[4] = {
-    NULL, "platterspeed", NULL, NULL
+    [BTN_SET_SPEED] = "platterspeed",
 };
 
 static void draw_settings_value_overlay(struct deck *d2) {
@@ -160,13 +162,13 @@ static void draw_settings_value_overlay(struct deck *d2) {
     for (int i = 0; i < 4; i++) {
         if (settings_buttons_held & (1 << i)) { btn = i; break; }
     }
-    if (btn < 0) return;
+    if (btn < 0 || !settings_param_labels[btn]) return;
 
     /* Get current value */
     float val = 0;
-    if (btn == BTN_RED) {
+    if (btn == BTN_SET_PITCH) {
         val = (float)d2->player.note_pitch;
-    } else if (btn == BTN_BLUE) {
+    } else if (btn == BTN_SET_VOLUME) {
         val = (float)d2->player.setVolume;  /* gain multiplier */
     } else if (settings_param_names[btn]) {
         get_variable_value(settings_param_names[btn], &val);
@@ -181,17 +183,17 @@ static void draw_settings_value_overlay(struct deck *d2) {
 
     /* Large value */
     char vbuf[16];
-    if (btn == BTN_RED) snprintf(vbuf, sizeof(vbuf), "%.3f", val);            /* pitch */
-    else if (btn == BTN_GREEN) snprintf(vbuf, sizeof(vbuf), "%.0f", val);     /* platterspeed */
-    else if (btn == BTN_BLUE) snprintf(vbuf, sizeof(vbuf), "x%.2f", val);     /* gain */
+    if (btn == BTN_SET_PITCH) snprintf(vbuf, sizeof(vbuf), "%.3f", val);
+    else if (btn == BTN_SET_SPEED) snprintf(vbuf, sizeof(vbuf), "%.0f", val);
+    else if (btn == BTN_SET_VOLUME) snprintf(vbuf, sizeof(vbuf), "x%.2f", val);   /* gain */
     else snprintf(vbuf, sizeof(vbuf), "%.1f", val);
     oled_text_color(18, 72, vbuf, FONT_LARGE, COLOR_WHITE);
 
     /* Visual gauge bar */
     float norm = 0;
-    if (btn == BTN_RED) norm = (val - 0.25f) / 3.75f;     /* note_pitch 0.25-4.0 */
-    else if (btn == BTN_GREEN) norm = val / 32768.0f;     /* platterspeed */
-    else if (btn == BTN_BLUE) norm = val / 8.0f;          /* gain (max 8x with soft-clip) */
+    if (btn == BTN_SET_PITCH) norm = (val - 0.25f) / 3.75f;   /* note_pitch 0.25-4.0 */
+    else if (btn == BTN_SET_SPEED) norm = val / 32768.0f;     /* platterspeed */
+    else if (btn == BTN_SET_VOLUME) norm = val / 8.0f;        /* gain (max 8x with soft-clip) */
     if (norm < 0) norm = 0;
     if (norm > 1) norm = 1;
     oled_draw_progress_bar(18, 100, 110, 6, norm, accent);
@@ -203,18 +205,19 @@ static void draw_function_mode_strip(int y, struct deck *beats) {
     const char *labels[4];   /* by button index */
     FunctionMode mode = current_function_mode;
 
-    labels[BTN_MODE] = "Mode";
     if (mode == FUNC_MODE_SETTINGS) {
-        labels[BTN_RED] = "Pitch";
-        labels[BTN_GREEN] = "Speed";
-        labels[BTN_BLUE] = "Vol";
+        labels[BTN_SET_PITCH] = "Pitch";
+        labels[BTN_SET_SPEED] = "Speed";
+        labels[BTN_SET_VOLUME] = "Vol";
     } else if (mode == FUNC_MODE_PLAY) {
-        labels[BTN_BLUE] = "Prev";
-        labels[BTN_GREEN] = "Next";
-        labels[BTN_RED] = beats->player.stopped ? "Start" : "Stop";
+        labels[BTN_PLAY_PREV] = "Prev";
+        labels[BTN_PLAY_NEXT] = "Next";
+        labels[BTN_PLAY_START] = beats->player.stopped ? "Start" : "Stop";
     } else {
-        labels[BTN_RED] = labels[BTN_GREEN] = labels[BTN_BLUE] = "Cue";
+        for (int i = 0; i < 4; i++)
+            labels[i] = "Cue";
     }
+    labels[BTN_MODE] = "Mode";
 
     oled_fill_rect(0, y, DISPLAY_WIDTH, 14, RGB565(15, 10, 30));
     const int pad = 4, gap = 4;   /* as the cue bar */
@@ -607,7 +610,7 @@ void display_home_screen(struct deck *decks[], int deck_count) {
     /* ── Settings value overlay (on top of platter when adjusting) ── */
     draw_settings_value_overlay(d_hero);
 
-    /* Yellow changed the button mode: say so in big letters */
+    /* The red button changed the mode: say so in big letters */
     {
         static int shown_mode = -1;
         if (shown_mode >= 0 && shown_mode != (int)current_function_mode) {
@@ -708,7 +711,7 @@ void handle_main_menu_navigation(struct deck *decks[], int deck_count) {
                 case 3: mainMenuState = MENU_RECORD;
                         action_record(decks[1], 1);
                         break;
-                case 4: /* Next button mode, as the yellow button does */
+                case 4: /* Next button mode, as the red button does */
                         function_mode_set(current_function_mode + 1);
                         break;
                 case 5: mainMenuState = MENU_CONTROLLER; break;

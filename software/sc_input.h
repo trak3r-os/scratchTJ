@@ -5,17 +5,26 @@
 #include <stdbool.h>
 
 /* The four coloured buttons, by index. Left to right on the panel
- * they are blue, yellow, green, red. Yellow always switches mode. */
+ * they are blue, yellow, green, red. Red always switches mode. */
 #define BTN_RED     0
 #define BTN_GREEN   1
 #define BTN_YELLOW  2
 #define BTN_BLUE    3
-#define BTN_MODE    BTN_YELLOW
+
+/* What each button does. Red (rightmost on the panel) cycles the mode;
+ * the other three are cues in CUE mode, and these in the other modes: */
+#define BTN_MODE        BTN_RED
+#define BTN_SET_VOLUME  BTN_BLUE    /* SETTINGS: hold + spin */
+#define BTN_SET_PITCH   BTN_YELLOW
+#define BTN_SET_SPEED   BTN_GREEN
+#define BTN_PLAY_PREV   BTN_BLUE    /* PLAY: previous sample (hold: beat) */
+#define BTN_PLAY_START  BTN_YELLOW  /* PLAY: start / stop the beat */
+#define BTN_PLAY_NEXT   BTN_GREEN   /* PLAY: next sample (hold: beat) */
 
 /* Button index at each panel position, left to right */
 extern const int button_panel_order[4];
 
-/* What the red, green and blue buttons do */
+/* What the blue, yellow and green buttons do */
 typedef enum {
     FUNC_MODE_CUE = 0,       /* cue points: tap = jump, hold = set */
     FUNC_MODE_SETTINGS = 1,  /* hold + spin = pitch, platter speed, volume */
@@ -41,6 +50,7 @@ extern int cue_display_states[4];
 extern bool capIsTouched;
 extern bool motionTouched;  /* Touch by motion On: the platter is being turned */
 extern volatile unsigned long motion_touch_count; /* touches by motion so far */
+extern volatile bool spin_free; /* Motor takeover: the platter spins on its own */
 extern unsigned int ADCs[4];
 extern volatile unsigned int cap_raw;            /* last touch sensor reading */
 extern volatile unsigned long input_activity_ms; /* CLOCK_MONOTONIC ms of the last

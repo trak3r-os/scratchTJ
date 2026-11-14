@@ -116,7 +116,7 @@ countersunk or M3 × 5 pan head.
 Four momentary push buttons with a 7 mm threaded bushing, mounted through the
 low deck. They connect between Arduino A0–A3 and GND (internal pull-ups, no
 resistors). Use four colours: on the panel, from left to right, **blue,
-yellow, green, red**. Yellow is the mode button (CUE / SETTINGS / PLAY); what
+yellow, green, red**. Red is the mode button (CUE / SETTINGS / PLAY); what
 the other three do depends on the mode, see [USAGE.md](USAGE.md).
 
 ### Platter and axle
@@ -174,8 +174,8 @@ The printed hub, spacer, bearing retainer, bearing collar and platter cap
  Innofader      out ────►│ A5                                                 │
                 VCC ◄────│ 5V                                                 │
                 GND ─────│ GND                                                │
- Red button     ────────►│ A0  ─┐                                             │
- Yellow (mode)  ────────►│ A1   │ other side of each button to GND           │
+ Red (mode)     ────────►│ A0  ─┐                                             │
+ Yellow button  ────────►│ A1   │ other side of each button to GND           │
  Blue button    ────────►│ A2   │                                             │
  Green button   ────────►│ A3  ─┘                                             │
                          │ D10 ──[ 1.2 kΩ ]──┐                                │
@@ -212,8 +212,8 @@ and `software/oled_display.c` (display DC / RES).
 | Pin | Connects to | Notes |
 |-----|-------------|-------|
 | A5 | Fader output | 10-bit analog |
-| A0 | Red button | To GND when pressed, internal pull-up |
-| A1 | Yellow button (mode) | " |
+| A0 | Red button (mode) | To GND when pressed, internal pull-up |
+| A1 | Yellow button | " |
 | A2 | Blue button | " |
 | A3 | Green button | " |
 | D10 | Touch send | Through the 1.2 kΩ resistor to D12 |

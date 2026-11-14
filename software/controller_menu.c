@@ -348,6 +348,14 @@ static bool setting_live_info(EditableVariable *v, float value, char *buf, size_
                      motionTouched ? "TOUCHED" : "");
         return true;
     }
+    if (strcmp(v->name, "motor_takeover") == 0) {
+        /* Spin the platter and let go: shows when the motor takes over */
+        if (cfg_motion_touch < 0.5f)
+            snprintf(buf, n, "Touch by motion is Off");
+        else
+            snprintf(buf, n, "Now: %s", spin_free ? "MOTOR (free spin)" : "platter");
+        return true;
+    }
     if (strcmp(v->name, "faderopenpoint") == 0 ||
         strcmp(v->name, "faderclosepoint") == 0) {
         /* Distance of the fader from each end, out of 1023 */

@@ -54,7 +54,7 @@ ready-to-print STL files.
 - **SC1000 / SC500 feel out of the box**: the same `scsettings.txt` and the same
   defaults. Every setting can be changed live from the Config menu, and each
   one is explained on screen and in [docs/SETTINGS.md](docs/SETTINGS.md).
-- **4 coloured buttons**: yellow switches between three modes for the other
+- **4 coloured buttons**: red switches between three modes for the other
   three. **CUE**: three cue points (tap to jump, hold to set). **SETTINGS**:
   hold a button and turn the platter to change pitch, platter speed or volume.
   **PLAY**: change sample, and start / stop the beat.

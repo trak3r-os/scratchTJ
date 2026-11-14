@@ -296,7 +296,7 @@ void oled_draw_cue_bar(const int states[4], const double positions[4]) {
         int i = button_panel_order[slot];
         int x = CUE_BAR_PAD + slot * (btn_w + CUE_BTN_GAP);
 
-        /* Yellow is the mode button: its slot names the mode */
+        /* The mode button's slot names the mode */
         if (i == BTN_MODE) {
             const char *m = function_mode_short(current_function_mode);
             st7789_fill_rect(x, CUE_BAR_Y, btn_w, CUE_BAR_HEIGHT - 2, cue_colors[i]);

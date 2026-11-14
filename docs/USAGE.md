@@ -20,8 +20,8 @@
 | **Knob, click** | Select / confirm / enter. From the home screen, opens the main menu |
 | **Knob, hold (0.5 s)** | Back / cancel, like KEY0. On the home screen: switch the active deck (DECK 1 ↔ DECK 2); platter, cue buttons and screen follow it |
 | **KEY0 key** | Back / cancel |
-| **Yellow button** | Switch the button mode: CUE → SETTINGS → PLAY |
-| **Blue, green, red buttons** | Depend on the mode, see below |
+| **Red button** | Switch the button mode: CUE → SETTINGS → PLAY |
+| **Blue, yellow, green buttons** | Depend on the mode, see below |
 
 ---
 
@@ -41,7 +41,7 @@ The home screen shows the active deck:
 - a legend showing what each coloured button does in the current mode, and
   under it a bar with one slot per button, in the same order as on the panel
   (blue, yellow, green, red). The cue slots show the stored cue times; the
-  yellow slot names the mode.
+  red slot names the mode.
 
 The title bar shows **[S]** in SETTINGS mode and **[P]** in PLAY mode.
 
@@ -52,14 +52,14 @@ wake it. The timeout is set in *Config → Screen*.
 
 ## Coloured buttons: CUE, SETTINGS and PLAY modes
 
-Left to right the buttons are **blue, yellow, green, red**. **Yellow switches
+Left to right the buttons are **blue, yellow, green, red**. **Red switches
 the mode**, whatever mode you are in: CUE → SETTINGS → PLAY → CUE. A big label
 shows the new mode for a moment, and the main menu item **Btn: …** does the
 same. The instrument starts in **SETTINGS** mode.
 
 ### CUE mode
 
-Blue, green and red are three cue points on the active deck.
+Blue, yellow and green are three cue points on the active deck.
 
 | Press | Action |
 |-------|--------|
@@ -73,8 +73,8 @@ Cue points are saved per track.
 | Button | Function | How |
 |--------|----------|-----|
 | Blue | Volume (gain) | Hold and turn the platter (up to ×8; above ×1 it clips, see [Soft clip](SETTINGS.md#soft-clip)) |
+| Yellow | Pitch | Hold and turn the platter (0.25× to 4×) |
 | Green | Platter speed | Hold and turn the platter |
-| Red | Pitch | Hold and turn the platter (0.25× to 4×) |
 
 While you hold a button and turn the platter, an overlay shows the parameter,
 its value and a gauge, and the audio position stays frozen. The settings are
@@ -87,8 +87,8 @@ Change the sample or the beat, and start or stop the beat, without the menu.
 | Button | Tap | Hold (0.6 s) |
 |--------|-----|--------------|
 | Blue | Previous sample (deck 2) | Previous beat (deck 1) |
+| Yellow | Start / stop the beat (deck 1), as soon as you press | — |
 | Green | Next sample (deck 2) | Next beat (deck 1) |
-| Red | Start / stop the beat (deck 1), as soon as you press | — |
 
 ---
 
@@ -116,7 +116,7 @@ HOME SCREEN
 │
 ├── Record Dk2 ................... recording workflow
 │
-├── Btn: CUE/SETTINGS/PLAY ....... next button mode (same as yellow)
+├── Btn: CUE/SETTINGS/PLAY ....... next button mode (same as red)
 │
 ├── Config
 │   ├── Sound Settings ........... every ALSA mixer control of the sound card
@@ -160,7 +160,7 @@ start switched off. Every setting can be changed while you play, from
 
 | Section | Settings |
 |---------|----------|
-| Platter | Platter speed, Reverse platter, Touch threshold, Touch by motion, Motion threshold, Slipmat, Brake length, Tracking gain, Pitch response, Speed assist, Glitch filter |
+| Platter | Platter speed, Reverse platter, Touch threshold, Touch by motion, Motion threshold, Motor takeover, Slipmat, Brake length, Tracking gain, Pitch response, Speed assist, Glitch filter |
 | Fader & Volume | Fader mode (SC1000 cut / Curve), Cut beats, Open point, Close point, Fader direction, Curve width, Curve shape, Fader smoothing, Soft clip |
 | Screen | Screen off after |
 

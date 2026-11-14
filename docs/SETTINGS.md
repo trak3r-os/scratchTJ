@@ -55,6 +55,7 @@ ScratchTJ works out each setting's value in three layers. Each layer overrides t
 | Touch threshold | 5000 | The touch-sensor reading above which a hand counts as on the platter. |
 | Touch by motion | Off | Off, On or Motor: lets the platter work without the touch sensor. Only for a broken sensor. |
 | Motion threshold | 0.25° | With Touch by motion On: how far the platter must turn before it counts as your hand. |
+| Motor takeover | Off | With Touch by motion: after this long spinning on its own, the motor takes the record back. |
 | Slipmat | 200 | How fast the record gets back to speed when you let go. |
 | Brake length | 3000 | How long the stop button takes to stop the track. |
 | Tracking gain | 40 | How tightly the sound follows the platter under your hand. |
@@ -109,6 +110,18 @@ Only used when Touch by motion is **On**. It is how far the platter has to turn,
 - If it is too high, slow moves are missed and the record plays on under your hand.
 
 While you edit it, the screen counts the touches, so you can nudge the platter and see which moves count.
+
+### Motor takeover
+
+For Touch by motion On or Motor. When you let go of a spinning platter, it keeps turning on its own for a while. Without a touch sensor that used to look like a hand, so the sound followed the platter until it stopped. With Motor takeover on, a virtual turntable motor takes the record back to normal speed (as quickly as **Slipmat** says) while the platter spins on.
+
+It works because a free platter can only slow down, and gently. A hand speeds it up, reverses it or brakes it hard, and that gives the record back to the platter at once. The setting is how long the platter must turn with no sign of a hand before the motor takes over.
+
+- **Off** (default): the platter keeps the record until it stops, as before.
+- **250 ms** is a good start. Shorter reacts sooner, but hand moves are more likely to be taken for a free spin.
+- Very slow, smooth moves (one stroke every two seconds or slower) can pass for a free spin.
+
+While you edit it, the screen shows *MOTOR* when the motor has the record: spin the platter, let go and watch.
 
 ### Slipmat
 
@@ -253,13 +266,13 @@ The screen turns off after the set time if you have not touched the knob, KEY0, 
 
 ## SETTINGS-mode buttons
 
-The yellow button switches the coloured buttons between CUE, SETTINGS and PLAY mode. In SETTINGS mode, the other three become live controls. Hold a button and turn the platter:
+The red button switches the coloured buttons between CUE, SETTINGS and PLAY mode. In SETTINGS mode, the other three become live controls. Hold a button and turn the platter:
 
 | Button | Controls | Range |
 |--------|----------|-------|
 | Blue | Volume of the active deck | 0 to 800% |
+| Yellow | Pitch: musical speed of the active deck | 0.25× to 4× |
 | Green | Platter speed (the same setting as in the Platter section) | 1000 to 32768 |
-| Red | Pitch: musical speed of the active deck | 0.25× to 4× |
 
 While you hold a button, the platter does not move the sound, and a box on the home screen shows the value. Settings are saved when you release the buttons.
 
@@ -310,6 +323,7 @@ Settings that also appear in the Config menu only give the **default** here. A v
 | `touch_threshold` | Platter > Touch threshold | 500 – 65000 (steps of 500) |
 | `motion_touch` | Platter > Touch by motion | 0 Off / 1 On / 2 Motor |
 | `motion_threshold` | Platter > Motion threshold | 0.25 – 10 (degrees) |
+| `motor_takeover` | Platter > Motor takeover | 0 (Off) – 1000 ms |
 | `slippiness` | Platter > Slipmat | 1 – 3000 |
 | `brakespeed` | Platter > Brake length | 1 – 10000 |
 | `target_pitch` | Platter > Tracking gain | 1 – 240 |
@@ -342,6 +356,8 @@ Older configs may also contain `fader_sharp` and `fhist_secs`. These keys are no
 **The touch sensor is broken.** Set Touch by motion to On or Motor until it is fixed.
 
 **With Touch by motion On, a light touch or a knock stops the sound.** Raise Motion threshold, or try Touch by motion Motor.
+
+**With Touch by motion, the sound follows the platter until it stops spinning after you let go.** Set Motor takeover to 250 ms.
 
 **The sample crackles when the fader rests at the edge.** Widen the gap between Open point and Close point, for example to 8 and 3.
 

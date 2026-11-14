@@ -20,6 +20,7 @@ float cfg_jogreverse = 1.0f;
 float cfg_touch_threshold = 5000.0f;
 float cfg_motion_touch = 0.0f;
 float cfg_motion_threshold = 0.25f;
+float cfg_motor_takeover = 0.0f;
 float cfg_slippiness = 200.0f;
 float cfg_brakespeed = 3000.0f;
 float cfg_target_pitch = 40.0f;
@@ -100,6 +101,20 @@ static const SettingInfo settings[] = {
                 "counts as your hand. Raise it if a light touch or a "
                 "knock stops the sound. Too high and slow moves are "
                 "missed. Default: 0.25 degrees.",
+    },
+    {
+        .name = "motor_takeover", .valuePtr = &cfg_motor_takeover,
+        .minValue = 0, .maxValue = 1000, .stepSize = 25,
+        .kind = VAR_NUMBER, .decimals = 0, .unit = "ms", .zero_text = "Off",
+        .section = SECTION_PLATTER, .label = "Motor takeover",
+        .help = "With Touch by motion On or Motor. When you let go of a "
+                "spinning platter it keeps turning by itself. After this "
+                "long with no hand on it, a virtual turntable motor takes "
+                "the record back to normal speed (as fast as Slipmat "
+                "says), while the platter spins on. Pushing, reversing "
+                "or braking the platter takes it back at once. Off: the "
+                "platter keeps the record until it stops. Try 250 ms. "
+                "Very slow, smooth moves can pass for a free spin.",
     },
     {
         .name = "slippiness", .valuePtr = &cfg_slippiness,
