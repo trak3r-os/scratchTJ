@@ -11,18 +11,17 @@
 #define BTN_YELLOW  2
 #define BTN_BLUE    3
 
-/* What each button does. Red (rightmost on the panel) cycles the mode;
- * the other three are cues in CUE mode, and these in the other modes: */
+/* What each button does. Red (rightmost on the panel) cycles the mode
+ * when tapped, and held switches the deck SETTINGS and PLAY act on
+ * (button_deck); the other three are cues in CUE mode, and these in the
+ * other modes: */
 #define BTN_MODE        BTN_RED
 #define BTN_SET_VOLUME  BTN_BLUE    /* SETTINGS: hold + spin */
 #define BTN_SET_PITCH   BTN_YELLOW
 #define BTN_SET_SPEED   BTN_GREEN
-#define BTN_PLAY_PREV   BTN_BLUE    /* PLAY: previous sample (hold: beat) */
-#define BTN_PLAY_START  BTN_YELLOW  /* PLAY: start / stop the beat */
-#define BTN_PLAY_NEXT   BTN_GREEN   /* PLAY: next sample (hold: beat) */
-#define BTN_DECKS_1     BTN_BLUE    /* DECKS: play / stop Deck 1 */
-#define BTN_DECKS_BOTH  BTN_YELLOW  /* DECKS: play / stop both decks */
-#define BTN_DECKS_2     BTN_GREEN   /* DECKS: play / stop Deck 2 */
+#define BTN_PLAY_PREV   BTN_BLUE    /* PLAY: previous file */
+#define BTN_PLAY_START  BTN_YELLOW  /* PLAY: start / stop */
+#define BTN_PLAY_NEXT   BTN_GREEN   /* PLAY: next file */
 
 /* Button index at each panel position, left to right */
 extern const int button_panel_order[4];
@@ -31,8 +30,7 @@ extern const int button_panel_order[4];
 typedef enum {
     FUNC_MODE_CUE = 0,       /* cue points: tap = jump, hold = set */
     FUNC_MODE_SETTINGS = 1,  /* hold + spin = pitch, platter speed, volume */
-    FUNC_MODE_PLAY = 2,      /* change sample/beat, start/stop the beat */
-    FUNC_MODE_DECKS = 3,     /* play / stop Deck 1, Deck 2 or both */
+    FUNC_MODE_PLAY = 2,      /* change file, start/stop */
     FUNC_MODE_COUNT
 } FunctionMode;
 
@@ -42,6 +40,7 @@ void function_mode_set(FunctionMode mode);
 const char *function_mode_name(FunctionMode mode);   /* "SETTINGS" */
 const char *function_mode_short(FunctionMode mode);  /* "SET" */
 extern volatile int active_deck;                /* 0 or 1: which deck platter controls */
+extern volatile int button_deck;                /* 0 or 1: the deck SETTINGS and PLAY act on */
 
 void SC_Input_Start();
 void process_rot(int raw, double when);

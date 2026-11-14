@@ -518,18 +518,16 @@ unsigned int butCounter = 0;
 unsigned char faderOpen1 = 0, faderOpen2 = 0;
 
 /* ── Coloured buttons ──────────────────────────────────────────
- * Red switches mode, in every mode. What blue, yellow and green do
- * depends on the mode (roles in sc_input.h):
+ * Red, in every mode: tap = next mode, hold = switch button_deck, the
+ * deck SETTINGS and PLAY act on (Deck 2 at start-up). What blue, yellow
+ * and green do depends on the mode (roles in sc_input.h):
  *   CUE       tap = jump to the cue, hold 1 s = set it (active deck)
- *   SETTINGS  hold + spin the platter = volume (blue), pitch (yellow),
- *             platter speed (green) of the active deck
- *   PLAY      blue/green tap = previous/next sample (Deck 2),
- *             hold = previous/next beat (Deck 1); yellow = beat
- *             start/stop
- *   DECKS     play/stop Deck 1 (blue), Deck 2 (green) or both
- *             (yellow) */
+ *   SETTINGS  hold + spin the platter = volume (blue), pitch (yellow)
+ *             of button_deck, platter speed (green)
+ *   PLAY      blue/green = previous/next file, yellow = start/stop,
+ *             on button_deck, on the press */
 #define CUE_HOLD_MS   1000
-#define PLAY_HOLD_MS  600
+#define MODE_HOLD_MS  600
 #define CONFIG_FILE   "/home/pi/.scratchtj/config.cfg"
 
 int cue_display_states[4] = {CUE_STATE_EMPTY, CUE_STATE_EMPTY,
@@ -538,11 +536,14 @@ int cue_display_states[4] = {CUE_STATE_EMPTY, CUE_STATE_EMPTY,
 volatile FunctionMode current_function_mode = FUNC_MODE_SETTINGS;
 volatile uint8_t settings_buttons_held = 0;
 volatile int active_deck = 1;  /* default: Deck 2 (index 1) */
+volatile int button_deck = 1;  /* Deck 2 at start-up, red hold switches */
 
 /* Left to right on the panel */
 const int button_panel_order[4] = {BTN_BLUE, BTN_YELLOW, BTN_GREEN, BTN_RED};
 
 static uint8_t last_buttons = 0;           /* bitmask by button index */
+static unsigned long mode_press_time;      /* 0 = red is up */
+static bool mode_hold_done;                /* red held: deck switched */
 static unsigned long press_time[4];        /* 0 = not a press of this mode */
 static bool hold_done[4];                  /* hold (or press) action fired */
 static volatile bool mode_reset_pending = false;
@@ -558,7 +559,6 @@ const char *function_mode_name(FunctionMode mode) {
     case FUNC_MODE_CUE:      return "CUE";
     case FUNC_MODE_SETTINGS: return "SETTINGS";
     case FUNC_MODE_PLAY:     return "PLAY";
-    case FUNC_MODE_DECKS:    return "DECKS";
     default:                 return "?";
     }
 }
@@ -569,7 +569,6 @@ const char *function_mode_short(FunctionMode mode) {
     case FUNC_MODE_CUE:      return "CUE";
     case FUNC_MODE_SETTINGS: return "SET";
     case FUNC_MODE_PLAY:     return "PLAY";
-    case FUNC_MODE_DECKS:    return "DECKS";
     default:                 return "?";
     }
 }
@@ -607,34 +606,16 @@ static void cue_store(int i, int ad) {
     printf("Cue %d set (Dk%d)\n", i + 1, ad + 1);
 }
 
-/* Deck 1 (index 0) plays the beats, Deck 2 (index 1) the samples */
-static void play_tap(int i) {
+/* PLAY, on button_deck (Deck 1 has the beats, Deck 2 the samples).
+ * Acts on the press, so a start lands on time. */
+static void play_press(int i) {
+    struct deck *d = &deck[button_deck];
     if (i == BTN_PLAY_PREV)
-        deck_prev_file(&deck[1]);
+        deck_prev_file(d);
     else if (i == BTN_PLAY_NEXT)
-        deck_next_file(&deck[1]);
-}
-
-static void play_hold(int i) {
-    if (i == BTN_PLAY_PREV)
-        deck_prev_file(&deck[0]);
-    else if (i == BTN_PLAY_NEXT)
-        deck_next_file(&deck[0]);
-}
-
-/* DECKS: play / stop a deck, or both. Both stops them if either one
- * is playing, and starts them together if neither is. Stopping brakes
- * like a turntable (Brake length). */
-static void decks_press(int i) {
-    if (i == BTN_DECKS_1) {
-        deck[0].player.stopped = !deck[0].player.stopped;
-    } else if (i == BTN_DECKS_2) {
-        deck[1].player.stopped = !deck[1].player.stopped;
-    } else if (i == BTN_DECKS_BOTH) {
-        bool stop = !deck[0].player.stopped || !deck[1].player.stopped;
-        deck[0].player.stopped = stop;
-        deck[1].player.stopped = stop;
-    }
+        deck_next_file(d);
+    else if (i == BTN_PLAY_START)
+        d->player.stopped = !d->player.stopped;
 }
 
 void process_cue_buttons(uint8_t button_byte) {
@@ -646,9 +627,25 @@ void process_cue_buttons(uint8_t button_byte) {
     uint8_t pressed = cur & ~last_buttons;
     last_buttons = cur;
 
-    /* Mode button (red): next mode */
-    if (pressed & (1 << BTN_MODE))
-        function_mode_set(current_function_mode + 1);
+    /* Red: a tap (let go before MODE_HOLD_MS) = next mode, a hold =
+     * switch the deck SETTINGS and PLAY act on */
+    if (pressed & (1 << BTN_MODE)) {
+        mode_press_time = now;
+        mode_hold_done = false;
+    }
+    if (mode_press_time != 0) {
+        if (cur & (1 << BTN_MODE)) {
+            if (!mode_hold_done && now - mode_press_time >= MODE_HOLD_MS) {
+                mode_hold_done = true;
+                button_deck = 1 - button_deck;
+                printf("Buttons act on Dk%d\n", button_deck + 1);
+            }
+        } else {
+            if (!mode_hold_done)
+                function_mode_set(current_function_mode + 1);
+            mode_press_time = 0;
+        }
+    }
 
     /* A new mode starts clean: buttons still down from the old one are
      * ignored until they are released */
@@ -670,12 +667,8 @@ void process_cue_buttons(uint8_t button_byte) {
         if (pressed & m) {
             press_time[i] = now;
             hold_done[i] = false;
-            /* Start / stop acts on the press, so the beat starts on time */
-            if (mode == FUNC_MODE_PLAY && i == BTN_PLAY_START) {
-                deck[0].player.stopped = !deck[0].player.stopped;
-                hold_done[i] = true;
-            } else if (mode == FUNC_MODE_DECKS) {
-                decks_press(i);
+            if (mode == FUNC_MODE_PLAY) {
+                play_press(i);
                 hold_done[i] = true;
             }
         }
@@ -684,22 +677,15 @@ void process_cue_buttons(uint8_t button_byte) {
 
         if (cur & m) {
             held |= m;
-            unsigned long hold_ms = (mode == FUNC_MODE_CUE) ? CUE_HOLD_MS : PLAY_HOLD_MS;
-            if (!hold_done[i] && now - press_time[i] >= hold_ms) {
+            if (mode == FUNC_MODE_CUE && !hold_done[i] &&
+                now - press_time[i] >= CUE_HOLD_MS) {
                 hold_done[i] = true;
-                if (mode == FUNC_MODE_CUE)
-                    cue_store(i, ad);
-                else if (mode == FUNC_MODE_PLAY)
-                    play_hold(i);
+                cue_store(i, ad);
             }
         } else {
             /* Released before the hold time: a tap */
-            if (!hold_done[i]) {
-                if (mode == FUNC_MODE_CUE)
-                    cue_jump(i, ad);
-                else if (mode == FUNC_MODE_PLAY)
-                    play_tap(i);
-            }
+            if (mode == FUNC_MODE_CUE && !hold_done[i])
+                cue_jump(i, ad);
             press_time[i] = 0;
         }
     }
@@ -916,7 +902,7 @@ static void settings_adjust_parameter(int btn, int delta) {
     settings_accum[btn] -= steps * SETTINGS_COUNTS_PER_STEP;
 
     double accel = platter_accel(delta);
-    int ad = active_deck;
+    int ad = button_deck;
     if (btn == BTN_MODE) {
         return;
     } else if (btn == BTN_SET_PITCH) {

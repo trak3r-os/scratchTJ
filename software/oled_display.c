@@ -296,9 +296,15 @@ void oled_draw_cue_bar(const int states[4], const double positions[4]) {
         int i = button_panel_order[slot];
         int x = CUE_BAR_PAD + slot * (btn_w + CUE_BTN_GAP);
 
-        /* The mode button's slot names the mode */
+        /* The mode button's slot names the mode, and for SETTINGS and
+         * PLAY the deck they act on: "SET 2", "PLAY 1" */
         if (i == BTN_MODE) {
-            const char *m = function_mode_short(current_function_mode);
+            char m[24];
+            if (current_function_mode == FUNC_MODE_CUE)
+                snprintf(m, sizeof(m), "%s", function_mode_short(current_function_mode));
+            else
+                snprintf(m, sizeof(m), "%s %d", function_mode_short(current_function_mode),
+                         button_deck + 1);
             st7789_fill_rect(x, CUE_BAR_Y, btn_w, CUE_BAR_HEIGHT - 2, cue_colors[i]);
             int mw = st7789_string_width(m, FONT_SMALL);
             st7789_draw_string(x + (btn_w - mw) / 2, CUE_BAR_Y + 6, m,

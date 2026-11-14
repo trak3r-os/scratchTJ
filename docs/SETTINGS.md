@@ -242,12 +242,12 @@ The screen turns off after the set time if you have not touched the knob, KEY0, 
 
 ## SETTINGS-mode buttons
 
-The red button switches the coloured buttons between CUE, SETTINGS, PLAY and DECKS mode. In SETTINGS mode, the other three become live controls. Hold a button and turn the platter:
+Tapping the red button switches the coloured buttons between CUE, SETTINGS and PLAY mode; holding it switches the deck SETTINGS and PLAY act on (Deck 2 at startup). In SETTINGS mode, the other three become live controls. Hold a button and turn the platter:
 
 | Button | Controls | Range |
 |--------|----------|-------|
-| Blue | Volume of the active deck | 0 to 800% |
-| Yellow | Pitch: musical speed of the active deck | 0.25× to 4× |
+| Blue | Volume of the selected deck | 0 to 800% |
+| Yellow | Pitch: musical speed of the selected deck | 0.25× to 4× |
 | Green | Platter speed (the same setting as in the Platter section) | 1000 to 32768 |
 
 While you hold a button, the platter does not move the sound, and a box on the home screen shows the value. Settings are saved when you release the buttons.

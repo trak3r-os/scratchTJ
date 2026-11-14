@@ -25,7 +25,9 @@ static int menuSize = 7;
 
 /* ── Deck / button-mode overlay state ─────────────────────────── */
 static unsigned long mode_overlay_start_time = 0;
-static bool mode_overlay_is_mode = false;  /* false: deck switch */
+/* What the big temporary label announces */
+enum { OVERLAY_MODE, OVERLAY_ACTIVE_DECK, OVERLAY_BUTTON_DECK };
+static int mode_overlay_kind = OVERLAY_MODE;
 #define MODE_OVERLAY_DURATION_MS 1500
 
 /* ── Cue flash state ──────────────────────────────────────────── */
@@ -99,7 +101,6 @@ static const uint16_t button_colors[4] = {
 static uint16_t function_mode_color(FunctionMode mode) {
     if (mode == FUNC_MODE_SETTINGS) return RGB565(0, 180, 255);
     if (mode == FUNC_MODE_PLAY)     return RGB565(0, 210, 120);
-    if (mode == FUNC_MODE_DECKS)    return RGB565(230, 90, 255);
     return RGB565(255, 200, 0);
 }
 
@@ -116,25 +117,29 @@ static void draw_mode_overlay(void) {
     oled_fill_rect(10, 70, 220, 70, RGB565(10, 10, 30));
 
     FunctionMode mode = current_function_mode;
-    char label[24], sub[32];
+    char label[24], sub[48];
     uint16_t color;
-    if (mode_overlay_is_mode) {
-        /* The mode button was pressed: the new mode and what it does */
+    if (mode_overlay_kind == OVERLAY_MODE) {
+        /* Red tapped: the new mode and what it does */
+        int bd = button_deck + 1;
         color = function_mode_color(mode);
         snprintf(label, sizeof(label), "%s", function_mode_name(mode));
         if (mode == FUNC_MODE_SETTINGS)
-            snprintf(sub, sizeof(sub), "Hold+spin: Vol Pitch Speed");
+            snprintf(sub, sizeof(sub), "Deck %d: Vol Pitch Speed", bd);
         else if (mode == FUNC_MODE_PLAY)
-            snprintf(sub, sizeof(sub), "< Sample   Beat   Sample >");
-        else if (mode == FUNC_MODE_DECKS)
-            snprintf(sub, sizeof(sub), "Play/stop  Dk1  Both  Dk2");
+            snprintf(sub, sizeof(sub), "Deck %d: Prev Start Next", bd);
         else
             snprintf(sub, sizeof(sub), "Tap: jump   Hold: set cue");
+    } else if (mode_overlay_kind == OVERLAY_BUTTON_DECK) {
+        /* Red held: the deck SETTINGS and PLAY now act on */
+        color = (button_deck == 1) ? THEME_DECK2_ACCENT : THEME_DECK1_ACCENT;
+        snprintf(label, sizeof(label), "DECK %d", button_deck + 1);
+        snprintf(sub, sizeof(sub), "SETTINGS + PLAY buttons");
     } else {
         /* Long knob press on home: the active deck */
         color = (active_deck == 1) ? THEME_DECK2_ACCENT : THEME_DECK1_ACCENT;
         snprintf(label, sizeof(label), "DECK %d", active_deck + 1);
-        snprintf(sub, sizeof(sub), "Buttons: %s", function_mode_name(mode));
+        snprintf(sub, sizeof(sub), "Platter, cues, screen");
     }
     oled_draw_line(10, 70, 229, 70, color);
     oled_draw_line(10, 139, 229, 139, color);
@@ -204,8 +209,7 @@ static void draw_settings_value_overlay(struct deck *d2) {
 
 /* What each coloured button does in this mode, one label over each
  * button's slot of the cue bar below, in panel order */
-static void draw_function_mode_strip(int y, struct deck *beats,
-                                     struct deck *samples) {
+static void draw_function_mode_strip(int y, struct deck *bd) {
     const char *labels[4];   /* by button index */
     FunctionMode mode = current_function_mode;
 
@@ -216,12 +220,7 @@ static void draw_function_mode_strip(int y, struct deck *beats,
     } else if (mode == FUNC_MODE_PLAY) {
         labels[BTN_PLAY_PREV] = "Prev";
         labels[BTN_PLAY_NEXT] = "Next";
-        labels[BTN_PLAY_START] = beats->player.stopped ? "Start" : "Stop";
-    } else if (mode == FUNC_MODE_DECKS) {
-        /* Six characters fill a slot */
-        labels[BTN_DECKS_1] = beats->player.stopped ? "Play 1" : "Stop 1";
-        labels[BTN_DECKS_2] = samples->player.stopped ? "Play 2" : "Stop 2";
-        labels[BTN_DECKS_BOTH] = "Both";
+        labels[BTN_PLAY_START] = bd->player.stopped ? "Start" : "Stop";
     } else {
         for (int i = 0; i < 4; i++)
             labels[i] = "Cue";
@@ -514,7 +513,7 @@ void display_home_screen(struct deck *decks[], int deck_count) {
 
     /* ── Mode indicator in title bar ─────────────────────────── */
     if (current_function_mode != FUNC_MODE_CUE) {
-        /* First letter of the mode: S, P or D */
+        /* First letter of the mode: S or P */
         char letter[2] = { function_mode_short(current_function_mode)[0], 0 };
         oled_fill_rect(DISPLAY_WIDTH - pw - 18, 4, 10, 8,
                        function_mode_color(current_function_mode));
@@ -584,7 +583,7 @@ void display_home_screen(struct deck *decks[], int deck_count) {
     draw_deck_compact(d_other, other + 1, other_accent, 176);
 
     /* ── Function mode info strip (y=196..210) ────────────────── */
-    draw_function_mode_strip(196, decks[0], decks[1]);
+    draw_function_mode_strip(196, decks[button_deck]);
 
     /* ── Cue flash logic (y=212, moved from 198) ──────────────── */
     {
@@ -618,16 +617,22 @@ void display_home_screen(struct deck *decks[], int deck_count) {
     }
 
     /* ── Settings value overlay (on top of platter when adjusting) ── */
-    draw_settings_value_overlay(d_hero);
+    draw_settings_value_overlay(decks[button_deck]);
 
-    /* The red button changed the mode: say so in big letters */
+    /* The red button changed the mode, or (held) the deck the buttons
+     * act on: say so in big letters */
     {
-        static int shown_mode = -1;
+        static int shown_mode = -1, shown_button_deck = -1;
         if (shown_mode >= 0 && shown_mode != (int)current_function_mode) {
-            mode_overlay_is_mode = true;
+            mode_overlay_kind = OVERLAY_MODE;
+            mode_overlay_start_time = main_millis();
+        }
+        if (shown_button_deck >= 0 && shown_button_deck != button_deck) {
+            mode_overlay_kind = OVERLAY_BUTTON_DECK;
             mode_overlay_start_time = main_millis();
         }
         shown_mode = current_function_mode;
+        shown_button_deck = button_deck;
     }
 
     /* ── Mode overlay (big temporal label, drawn last) ──────────── */
@@ -691,7 +696,7 @@ void handle_main_menu_navigation(struct deck *decks[], int deck_count) {
          * Holding the knob on home = switch active deck */
         if (back && menu_back_was_hold()) {
             active_deck = 1 - active_deck;
-            mode_overlay_is_mode = false;
+            mode_overlay_kind = OVERLAY_ACTIVE_DECK;
             mode_overlay_start_time = main_millis();
             needsUpdate = true;
         }

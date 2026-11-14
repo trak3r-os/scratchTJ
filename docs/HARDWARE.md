@@ -116,7 +116,7 @@ countersunk or M3 × 5 pan head.
 Four momentary push buttons with a 7 mm threaded bushing, mounted through the
 low deck. They connect between Arduino A0–A3 and GND (internal pull-ups, no
 resistors). Use four colours: on the panel, from left to right, **blue,
-yellow, green, red**. Red is the mode button (CUE / SETTINGS / PLAY / DECKS); what
+yellow, green, red**. Red is the mode button (CUE / SETTINGS / PLAY); what
 the other three do depends on the mode, see [USAGE.md](USAGE.md).
 
 ### Platter and axle
