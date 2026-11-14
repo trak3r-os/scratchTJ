@@ -75,10 +75,10 @@ static bool chk(const char *s, int r)
 }
 
 static int pcm_open(struct alsa_pcm *alsa, const char *device_name,
-                    snd_pcm_stream_t stream, int rate, int buffer_size)
+                    snd_pcm_stream_t stream, int rate, int buffer_size,
+                    int periods)
 {
     int r, dir;
-    unsigned int p;
     size_t bytes;
     snd_pcm_hw_params_t *hw_params;
 
@@ -132,19 +132,25 @@ static int pcm_open(struct alsa_pcm *alsa, const char *device_name,
         return -1;
     }*/
 
-    /* Set period size first (= actual audio latency), then buffer = 2 periods */
+    /* The buffer is split into periods; the player fills one period at
+     * a time. With 2 periods it has one period's time to refill before
+     * the card runs dry (an xrun, heard as a dropout); each extra period
+     * adds that much slack, and that much latency. */
+    if (periods < 2)
+        periods = 2;
     {
-        snd_pcm_uframes_t period_frames = buffer_size / 2;
+        snd_pcm_uframes_t period_frames = buffer_size / periods;
         dir = 0;
         r = snd_pcm_hw_params_set_period_size_near(alsa->pcm, hw_params, &period_frames, &dir);
         if (!chk("hw_params_set_period_size_near", r))
             return -1;
     }
 
-    if (snd_pcm_hw_params_set_buffer_size(alsa->pcm, hw_params, buffer_size) < 0)
     {
-        fprintf(stderr, "Error setting buffersize.\n");
-        return (-1);
+        snd_pcm_uframes_t buffer_frames = buffer_size;
+        r = snd_pcm_hw_params_set_buffer_size_near(alsa->pcm, hw_params, &buffer_frames);
+        if (!chk("hw_params_set_buffer_size_near", r))
+            return -1;
     }
 
     r = snd_pcm_hw_params(alsa->pcm, hw_params);
@@ -488,7 +494,7 @@ static struct device_ops alsa_ops = {
 /* Open ALSA device. Do not operate on audio until device_start() */
 
 int alsa_init(struct device *dv, const char *device_name,
-              int rate, int buffer_size, bool slave)
+              int rate, int buffer_size, int periods, bool slave)
 {
     struct alsa *alsa;
 
@@ -502,7 +508,7 @@ int alsa_init(struct device *dv, const char *device_name,
     if (!slave)
     {
         if (pcm_open(&alsa->playback, device_name, SND_PCM_STREAM_PLAYBACK,
-                     rate, buffer_size) < 0)
+                     rate, buffer_size, periods) < 0)
         {
             fputs("Failed to open device for playback.\n", stderr);
             goto fail_capture;

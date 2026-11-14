@@ -67,7 +67,8 @@ void display_preset_menu() {
 // Handle Preset Menu Navigation
 void handle_preset_menu_navigation(struct deck *decks[]) {
     int encoder_movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
+    int enter = menu_select_pressed();
+    int back = menu_back_pressed();
 
     if (presetMenuState == PRESET_MAIN) {
         // Main preset menu - choose Load or Save
@@ -76,7 +77,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             needsUpdate = true;
         }
 
-        if (button_press == 1) { // Short press - enter submenu
+        if (enter) { // Short press - enter submenu
             if (selectedPresetSlot == 0) {
                 presetMenuState = PRESET_LOAD;
             } else {
@@ -84,7 +85,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             }
             selectedPresetSlot = 0; // Reset to slot 1
             needsUpdate = true;
-        } else if (button_press == 2) { // Long press - back to main
+        } else if (back) { // Long press - back to main
             mainMenuState = MENU_MAIN;
             presetMenuState = PRESET_MAIN;
             needsUpdate = true;
@@ -96,7 +97,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             needsUpdate = true;
         }
 
-        if (button_press == 1) { // Short press - load preset
+        if (enter) { // Short press - load preset
             load_preset_from_slot(selectedPresetSlot + 1, decks);
             save_last_preset_number(selectedPresetSlot + 1);
 
@@ -109,7 +110,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             presetMenuState = PRESET_MAIN;
             selectedPresetSlot = 0;
             needsUpdate = true;
-        } else if (button_press == 2) { // Long press - back to main
+        } else if (back) { // Long press - back to main
             presetMenuState = PRESET_MAIN;
             selectedPresetSlot = 0;
             needsUpdate = true;
@@ -121,7 +122,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             needsUpdate = true;
         }
 
-        if (button_press == 1) { // Short press - save preset
+        if (enter) { // Short press - save preset
             save_preset_to_slot(selectedPresetSlot + 1, decks);
             save_last_preset_number(selectedPresetSlot + 1);
 
@@ -134,7 +135,7 @@ void handle_preset_menu_navigation(struct deck *decks[]) {
             presetMenuState = PRESET_MAIN;
             selectedPresetSlot = 0;
             needsUpdate = true;
-        } else if (button_press == 2) { // Long press - back to main
+        } else if (back) { // Long press - back to main
             presetMenuState = PRESET_MAIN;
             selectedPresetSlot = 0;
             needsUpdate = true;

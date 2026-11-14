@@ -306,6 +306,7 @@ void player_init(struct player *pl, unsigned int sample_rate,
 	pl->stopped = 0;
 	pl->platter_velocity = 0.0;
 	pl->platter_time = 0.0;
+	pl->motor_drive = false;
 	pl->track_corr = 0.0;
 	pl->tracking = false;
 	pl->recording = false;
@@ -603,9 +604,16 @@ void player_collect(struct player *pl, signed short *pcm, unsigned samples)
 		gain = user_gain + vel_ff * (TRACK_GAIN - user_gain);
 		pitch_alpha = user_alpha + vel_ff * (TRACK_ALPHA - user_alpha);
 
+		/* Touch by motion = Motor: the target moves on at motor speed
+		 * by itself (sc_input.c, motor_advance). Feeding that speed
+		 * forward, at full strength whatever Speed assist is, keeps
+		 * the sound from trailing the motor. */
+		if (pl->motor_drive)
+			vel = pl->motor_speed;
+
 		age = monotonic_now() - pl->platter_time;
 		if (vel_ff > 0.0 && age >= 0.0 && age < PLATTER_STALE)
-			vel = pl->platter_velocity * vel_ff;
+			vel += pl->platter_velocity * vel_ff;
 		if (age > MAX_EXTRAPOLATE)
 			age = MAX_EXTRAPOLATE;
 

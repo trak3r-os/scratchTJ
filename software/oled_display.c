@@ -1,4 +1,5 @@
 #include "oled_display.h"
+#include "sc_input.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -290,8 +291,21 @@ void oled_draw_cue_bar(const int states[4], const double positions[4]) {
         THEME_CUE3_COLOR, THEME_CUE4_COLOR
     };
 
-    for (int i = 0; i < 4; i++) {
-        int x = CUE_BAR_PAD + i * (btn_w + CUE_BTN_GAP);
+    /* One slot per button, in panel order */
+    for (int slot = 0; slot < 4; slot++) {
+        int i = button_panel_order[slot];
+        int x = CUE_BAR_PAD + slot * (btn_w + CUE_BTN_GAP);
+
+        /* Yellow is the mode button: its slot names the mode */
+        if (i == BTN_MODE) {
+            const char *m = function_mode_short(current_function_mode);
+            st7789_fill_rect(x, CUE_BAR_Y, btn_w, CUE_BAR_HEIGHT - 2, cue_colors[i]);
+            int mw = st7789_string_width(m, FONT_SMALL);
+            st7789_draw_string(x + (btn_w - mw) / 2, CUE_BAR_Y + 6, m,
+                               THEME_BG, FONT_SMALL);
+            continue;
+        }
+
         uint16_t color;
         if (states[i] == CUE_STATE_ACTIVE)
             color = THEME_CUE_ACTIVE;

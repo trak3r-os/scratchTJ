@@ -16,12 +16,19 @@
 # General Options #
 ###################
 #
+# Audio buffer, in frames at 48 kHz, split into "periods".
+# The player refills one period at a time; if it is late, the card
+# runs dry and you hear a short dropout ("ALSA: playback xrun" in the
+# log). More periods = more slack, and a little more latency:
+#   256 / 2 = 2.7 ms slack, 5.3 ms latency (SC1000 default)
+#   384 / 3 = 5.3 ms slack, 8.0 ms latency
+buffersize=384
+periods=3
+
 # Fader thresholds for hysteresis
 # You might need to adjust these for different faders
 # faderopenpoint should always be 
 # more than faderclosepoint
-
-buffersize=256
 
 # Value required to open the fader when it's closed
 faderopenpoint=5

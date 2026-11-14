@@ -31,8 +31,9 @@ extern MainMenuState mainMenuState;
 /* Menu control functions */
 void lcd_menu_init(struct deck *decks[], int deck_count);
 int rotary_encoder_moved();
-int rotary_button_pressed();   /* 1=short (back), 2=long (mode toggle) */
-int kb0_button_pressed();      /* 1=short (select/forward) */
+int menu_select_pressed(void); /* 1 = knob click (enter/select) */
+int menu_back_pressed(void);   /* 1 = KB0 press or knob hold (back) */
+bool menu_back_was_hold(void); /* the last back came from holding the knob */
 void poll_rotary_encoder(void);
 
 void trigger_io_event(unsigned char action, unsigned char deckNo, unsigned char param);

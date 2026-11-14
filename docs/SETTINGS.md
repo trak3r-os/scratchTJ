@@ -24,14 +24,15 @@ Open **Main Menu > Config**. You will see:
 Inside **Platter**, **Fader & Volume** or **Screen**, each row shows a setting and its current value.
 
 - **Turn the knob** to move between settings.
-- **Press KEY0** to open a setting. The edit screen shows:
+- **Click the knob** to open a setting. The edit screen shows:
   - the value, in large type;
   - a live reading for some settings, such as the touch sensor or the fader position;
   - the default and the allowed range;
   - a short explanation.
 - **Turn the knob** to change the value. The change takes effect straight away, so you can play while you adjust it. Turning the knob quickly takes bigger steps.
-- **Press KEY0** to keep the new value, or **push the knob** to undo it and go back to the old value.
-- **Push the knob** in the list to leave the section. If you changed anything, it is saved automatically.
+- **Click the knob** to keep the new value, or **press KEY0** to undo it and go back to the old value.
+- **Press KEY0** in the list to leave the section. If you changed anything, it is saved automatically.
+- Anywhere in the menus, **holding the knob** for half a second does the same as KEY0: it goes back.
 
 ### Where settings are stored
 
@@ -52,7 +53,8 @@ ScratchTJ works out each setting's value in three layers. Each layer overrides t
 | Platter speed | 9100 | How far you turn the platter for one second of sound. |
 | Reverse platter | On | Flips the platter's direction. |
 | Touch threshold | 5000 | The touch-sensor reading above which a hand counts as on the platter. |
-| Touch by motion | Off | Treats a turning platter as touched. Only for a broken touch sensor. |
+| Touch by motion | Off | Off, On or Motor: lets the platter work without the touch sensor. Only for a broken sensor. |
+| Motion threshold | 0.25° | With Touch by motion On: how far the platter must turn before it counts as your hand. |
 | Slipmat | 200 | How fast the record gets back to speed when you let go. |
 | Brake length | 3000 | How long the stop button takes to stop the track. |
 | Tracking gain | 40 | How tightly the sound follows the platter under your hand. |
@@ -67,7 +69,7 @@ This sets how far you turn the platter for one second of sound, which is how "bi
 - A higher number means more turning for the same sound, like a record spinning faster.
 - The edit screen shows the record speed this feels like.
 - **9100** feels like a 33 rpm record, which is the SC1000 default. **12288** feels like 45 rpm.
-- You can also change it while playing: in SETTINGS mode, hold the green button (button 2) and turn the platter.
+- You can also change it while playing: in SETTINGS mode, hold the green button and turn the platter.
 
 > The number is sensor steps per second of sound. The platter sensor has 16384 steps per turn, so rpm = Platter speed × 60 / 16384.
 
@@ -91,12 +93,22 @@ If the threshold is too low, the platter "touches" by itself and the record stop
 
 ### Touch by motion
 
-When this is on, the platter also counts as touched whenever it is being turned. It is a workaround for a touch sensor that is missing or broken. Leave it **Off** when the sensor works.
+A workaround for a touch sensor that is missing or broken. Leave it **Off** when the sensor works. It has three values:
 
-It has two downsides:
+- **Off**: only the touch sensor counts. This is the SC1000 behaviour.
+- **On**: the platter also counts as touched whenever it is being turned. It has two downsides:
+  - A record you hold still starts playing again after a fraction of a second, because a still platter looks the same as no hand.
+  - After a fast spin, a free-spinning platter keeps control for a moment after you let go, so the track is slow to pick up again.
+- **Motor**: the record always turns at normal speed, as if a motor drove it, and the platter adds to or takes from that speed. Turn forwards and the sound speeds up. Pull back at record speed and it stops; pull back faster and it plays backwards. As soon as you stop moving the platter, the sound is back at normal speed, so a small knock only wobbles the sound and never stops it. The stop button still works: the motor brakes, and then only the platter moves the record. If the touch sensor does see your hand, the motor lets go, so you can still hold the record still.
 
-- A record you hold still starts playing again after a fraction of a second, because a still platter looks the same as no hand.
-- After a fast spin, a free-spinning platter keeps control for a moment after you let go, so the track is slow to pick up again.
+### Motion threshold
+
+Only used when Touch by motion is **On**. It is how far the platter has to turn, within about a quarter of a second, before it counts as your hand. The default, **0.25°**, is what ScratchTJ has always used.
+
+- Raise it, for example to 1–2°, if a light touch or a knock on the case stops the sound.
+- If it is too high, slow moves are missed and the record plays on under your hand.
+
+While you edit it, the screen counts the touches, so you can nudge the platter and see which moves count.
 
 ### Slipmat
 
@@ -241,14 +253,13 @@ The screen turns off after the set time if you have not touched the knob, KEY0, 
 
 ## SETTINGS-mode buttons
 
-In SETTINGS mode (Main Menu > **Btn: CUE/SETTINGS**), the four cue buttons become live controls. Hold a button and turn the platter:
+The yellow button switches the coloured buttons between CUE, SETTINGS and PLAY mode. In SETTINGS mode, the other three become live controls. Hold a button and turn the platter:
 
 | Button | Controls | Range |
 |--------|----------|-------|
-| 1 (red) | Pitch: musical speed of the active deck | 0.25× to 4× |
-| 2 (green) | Platter speed (the same setting as in the Platter section) | 1000 to 32768 |
-| 3 (yellow) | Bend: turntable-style tempo nudge, for beat matching | ±8% |
-| 4 (blue) | Volume of the active deck | 0 to 800% |
+| Blue | Volume of the active deck | 0 to 800% |
+| Green | Platter speed (the same setting as in the Platter section) | 1000 to 32768 |
+| Red | Pitch: musical speed of the active deck | 0.25× to 4× |
 
 While you hold a button, the platter does not move the sound, and a box on the home screen shows the value. Settings are saved when you release the buttons.
 
@@ -268,7 +279,8 @@ Settings that also appear in the Config menu only give the **default** here. A v
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `buffersize` | 256 | Audio buffer size in samples. Smaller means less delay but more risk of crackles. Takes effect on restart. |
+| `buffersize` | 384 | Audio buffer size in samples (frames at 48 kHz). Smaller means less delay but more risk of dropouts. Takes effect on restart. |
+| `periods` | 3 | How many parts the buffer is split into. The player refills one part at a time, and has the rest as slack before the sound drops out. 384 / 3 gives 8 ms of delay and 5.3 ms of slack. The SC1000 used 256 / 2: 5.3 ms of delay, 2.7 ms of slack. Takes effect on restart. |
 | `platterspeed` | 9100 | Default for **Platter speed**. |
 | `slippiness` | 200 | Default for **Slipmat**. |
 | `brakespeed` | 3000 | Default for **Brake length**. |
@@ -296,7 +308,8 @@ Settings that also appear in the Config menu only give the **default** here. A v
 | `platterspeed` | Platter > Platter speed | 1000 – 32768 |
 | `jogreverse` | Platter > Reverse platter | 0 / 1 |
 | `touch_threshold` | Platter > Touch threshold | 100 – 65000 |
-| `motion_touch` | Platter > Touch by motion | 0 / 1 |
+| `motion_touch` | Platter > Touch by motion | 0 Off / 1 On / 2 Motor |
+| `motion_threshold` | Platter > Motion threshold | 0.25 – 10 (degrees) |
 | `slippiness` | Platter > Slipmat | 1 – 3000 |
 | `brakespeed` | Platter > Brake length | 1 – 10000 |
 | `target_pitch` | Platter > Tracking gain | 1 – 240 |
@@ -326,10 +339,14 @@ Older configs may also contain `fader_sharp` and `fhist_secs`. These keys are no
 
 **The record stops by itself, or keeps playing under your hand.** Set Touch threshold using the live Sensor reading.
 
-**The touch sensor is broken.** Turn on Touch by motion until it is fixed.
+**The touch sensor is broken.** Set Touch by motion to On or Motor until it is fixed.
+
+**With Touch by motion On, a light touch or a knock stops the sound.** Raise Motion threshold, or try Touch by motion Motor.
 
 **The sample crackles when the fader rests at the edge.** Widen the gap between Open point and Close point, for example to 8 and 3.
 
 **Get back the old ScratchTJ fader.** Set Fader mode to Curve. Alternatively, stay in SC1000 cut mode and set Cut beats to Left end: one end then cuts the beats and the other cuts the sample, with a hard cut instead of a curve.
 
 **The track takes a long time to start after you let go.** Check that Touch by motion is Off, and that Pitch response and Slipmat are at their defaults (0.10 and 200).
+
+**Short dropouts in the sound while playing.** First check the power supply. A Raspberry Pi that gets too little voltage slows its processor down, and the audio then runs late. `vcgencmd get_throttled` should print `throttled=0x0`; anything else, or "Undervoltage detected" in `dmesg`, means the supply or its cable is too weak (use a 5.1 V, 2.5 A supply and a short, thick cable). If the log shows `ALSA: playback xrun` with good power, raise `buffersize` / `periods` in `scsettings.txt`, for example to 512 / 4.

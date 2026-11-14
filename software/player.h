@@ -81,6 +81,7 @@ struct player {
 	double faderVolume; // current fader volume
     double setVolume; // volume set by the volume controls on the back of the sc1000 or the volume buttons on the sc500 (or whatever over midi)
 	bool capTouch;
+	bool motor_drive; /* Touch by motion = Motor: a virtual motor turns the record under the platter */
 	bool oldCapTouch;
 	bool GoodToGo;
 	bool stopped;

@@ -54,9 +54,10 @@ ready-to-print STL files.
 - **SC1000 / SC500 feel out of the box**: the same `scsettings.txt` and the same
   defaults. Every setting can be changed live from the Config menu, and each
   one is explained on screen and in [docs/SETTINGS.md](docs/SETTINGS.md).
-- **4 cue buttons** with two modes: **CUE** (jump to / set cue points) and
-  **SETTINGS** (hold a button and turn the platter to change pitch, platter
-  speed, pitch bend or volume).
+- **4 coloured buttons**: yellow switches between three modes for the other
+  three. **CUE**: three cue points (tap to jump, hold to set). **SETTINGS**:
+  hold a button and turn the platter to change pitch, platter speed or volume.
+  **PLAY**: change sample, and start / stop the beat.
 - **Live recording** from the sound card input straight into a deck.
 - **FTP access** to the beats and samples folders from any computer on your
   network.
@@ -125,7 +126,7 @@ dimensions, the reason for each part, and the wiring:
 | Small diametric disc magnet (Ø4 × 2 mm) | Glued to the tip of the platter bolt, read by the MT6701 |
 | ST7789 1.54" 240×240 SPI display with EC11 knob and key | Screen and menu controls on one board |
 | Innofader Mini Pro | Scratch fader |
-| 4 panel push buttons (7 mm) | Cue / settings buttons |
+| 4 panel push buttons (7 mm), blue / yellow / green / red | Mode button and cue / settings / play buttons |
 | 95 mm metal platter (3.5" HDD platter) | The surface you scratch |
 | 626ZZ ball bearing (6 × 19 × 6 mm), M6 pan-head bolt (25.5 mm under the head), M6 nut | Platter axle |
 | 1.2 kΩ resistor and a thin wire | Capacitive touch circuit |

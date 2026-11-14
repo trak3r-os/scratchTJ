@@ -25,7 +25,9 @@
 extern float cfg_platterspeed;     /* encoder counts per second of audio */
 extern float cfg_jogreverse;       /* 1 = platter direction flipped */
 extern float cfg_touch_threshold;  /* capacitive reading that counts as a touch */
-extern float cfg_motion_touch;     /* 1 = a turning platter counts as touched */
+extern float cfg_motion_touch;     /* 0 Off, 1 On (a turning platter counts as
+                                      touched), 2 Motor (virtual motor) */
+extern float cfg_motion_threshold; /* degrees of travel that count as a hand */
 extern float cfg_slippiness;       /* slipmat: higher = slower back to speed */
 extern float cfg_brakespeed;       /* stop button: higher = longer stop */
 extern float cfg_target_pitch;     /* position-tracking gain under the hand */

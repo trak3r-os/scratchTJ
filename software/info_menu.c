@@ -167,8 +167,8 @@ void display_info_menu_actions() {
 // Handle navigation within the Info menu
 void handle_info_menu_navigation() {
     int encoder_movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     // Navigate options in the action selection menu
     if (infoMenuState == 0) {
@@ -179,13 +179,13 @@ void handle_info_menu_navigation() {
             needsUpdate = true;
         }
 
-        /* KB0 = select */
-        if (kb0 == 1) {
+        /* Knob click = select */
+        if (enter) {
             infoMenuState = selectedInfoOption + 1;
             needsUpdate = true;
         }
-        /* Rotary click = back */
-        if (button_press == 1) {
+        /* KB0 or knob hold = back */
+        if (back) {
             mainMenuState = MENU_MAIN;
             infoMenuState = 0;
             needsUpdate = true;
@@ -195,7 +195,7 @@ void handle_info_menu_navigation() {
     else if (infoMenuState == 1) {
         display_cpu_mem_usage();
         usleep(100000);
-        if (button_press == 1 || kb0 == 1) {
+        if (back || enter) {
             infoMenuState = 0;
             needsUpdate = true;
             display_info_menu_actions();
@@ -204,7 +204,7 @@ void handle_info_menu_navigation() {
     else if (infoMenuState == 2) {
         display_version();
         usleep(100000);
-        if (button_press == 1 || kb0 == 1) {
+        if (back || enter) {
             infoMenuState = 0;
             needsUpdate = true;
             display_info_menu_actions();
@@ -213,7 +213,7 @@ void handle_info_menu_navigation() {
     else if (infoMenuState == 3) {
         display_network_info();
         usleep(250000);
-        if (button_press == 1 || kb0 == 1) {
+        if (back || enter) {
             infoMenuState = 0;
             needsUpdate = true;
             display_info_menu_actions();

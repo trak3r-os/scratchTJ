@@ -185,9 +185,9 @@ void handle_deck_menu_navigation(struct deck *d, int deckno) {
             break;
         case DECK_MENU_INFO: {
             rotary_encoder_moved(); /* consume */
-            int bp = rotary_button_pressed();
-            int kb = kb0_button_pressed();
-            if (bp == 1 || kb == 1) {
+            int back = menu_back_pressed();
+            int enter = menu_select_pressed();
+            if (back || enter) {
                 currentDeckMenuState = DECK_MENU_MAIN;
                 needsUpdate = true;
             }
@@ -213,22 +213,22 @@ void handle_deck_menu_navigation(struct deck *d, int deckno) {
 /* Handle menu navigation (generic) */
 void handle_menu_navigation(struct deck *d, int deckno, MenuItem *menuItems, int menuSize) {
     int encoder_movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     if (encoder_movement != 0) {
         selectedItem = (selectedItem + encoder_movement + menuSize) % menuSize;
         needsUpdate = true;
     }
 
-    /* KB0 = select */
-    if (kb0 == 1) {
+    /* Knob click = select */
+    if (enter) {
         menuItems[selectedItem].action(d, deckno);
         needsUpdate = true;
     }
 
-    /* Rotary click = back */
-    if (button_press == 1) {
+    /* KB0 or knob hold = back */
+    if (back) {
         if (currentDeckMenuState == DECK_MENU_MAIN) {
             mainMenuState = MENU_MAIN;
         }
@@ -277,8 +277,8 @@ void adjust_pitch(struct deck *d, int deckno) {
     static double orig_pitch = -1;
     static bool first_entry = true;
     int movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
     double pitch = d->player.note_pitch;
 
     if (orig_pitch < 0) { orig_pitch = pitch; first_entry = true; }
@@ -307,12 +307,12 @@ void adjust_pitch(struct deck *d, int deckno) {
         needsUpdate = false;
     }
 
-    if (kb0 == 1) {
+    if (enter) {
         orig_pitch = -1;
         currentDeckMenuState = DECK_MENU_MAIN;
         needsUpdate = true;
     }
-    if (button_press == 1) {
+    if (back) {
         d->player.note_pitch = orig_pitch;
         orig_pitch = -1;
         currentDeckMenuState = DECK_MENU_MAIN;
@@ -336,8 +336,8 @@ void adjust_volume(struct deck *d, int deckno) {
     static double orig_volume = -1;
     static bool first_entry = true;
     int movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
     int vol_pct = (int)(d->player.setVolume * 100 + 0.5);
 
     if (orig_volume < 0) { orig_volume = d->player.setVolume; first_entry = true; }
@@ -367,12 +367,12 @@ void adjust_volume(struct deck *d, int deckno) {
         needsUpdate = false;
     }
 
-    if (kb0 == 1) {
+    if (enter) {
         orig_volume = -1;
         currentDeckMenuState = DECK_MENU_MAIN;
         needsUpdate = true;
     }
-    if (button_press == 1) {
+    if (back) {
         d->player.setVolume = orig_volume;
         orig_volume = -1;
         currentDeckMenuState = DECK_MENU_MAIN;
@@ -477,18 +477,18 @@ static void action_start_recording(struct deck *d, int deckno) {
 /* handle_record_input_sources_navigation removed — source is inline in setup */
 
 static void handle_recording_navigation(struct deck *d, int deckno) {
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
-    /* KB0 = stop recording, back to setup screen */
-    if (kb0 == 1) {
+    /* Knob click = stop recording, back to setup screen */
+    if (enter) {
         printf("Deck %d: Stopping recording.\n", deckno + 1);
         stop_recording(d, &recordingContext);
         currentDeckMenuState = DECK_MENU_RECORD_SETUP;
         needsUpdate = true;
     }
-    /* Rotary click = stop and go back */
-    if (button_press == 1) {
+    /* KB0 or knob hold = stop and go back */
+    if (back) {
         stop_recording(d, &recordingContext);
         if (mainMenuState == MENU_RECORD) {
             mainMenuState = MENU_MAIN;
@@ -542,8 +542,8 @@ void action_platter_speed(struct deck *d, int deckno) {
 
     while (adjusting) {
         int movement = rotary_encoder_moved();
-        int bp = rotary_button_pressed();
-        int kb0 = kb0_button_pressed();
+        int back = menu_back_pressed();
+        int enter = menu_select_pressed();
 
         /* EC11 rotary = change value */
         if (movement != 0) {
@@ -554,12 +554,12 @@ void action_platter_speed(struct deck *d, int deckno) {
             needsUpdate = true;
         }
 
-        /* KB0 = confirm */
-        if (kb0 == 1) {
+        /* Knob click = confirm */
+        if (enter) {
             adjusting = false;
         }
-        /* Rotary click = cancel (revert) */
-        if (bp == 1) {
+        /* KB0 or knob hold = cancel (revert) */
+        if (back) {
             if (ptr) *ptr = orig_value;
             adjusting = false;
         }
@@ -715,8 +715,8 @@ static void display_browse_folders(struct deck *d) {
 
 static void handle_browse_folders_navigation(struct deck *d, int deckno) {
     int movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     if (movement != 0) {
         browseFolderIdx = (browseFolderIdx + movement + browseFolderCount) % browseFolderCount;
@@ -727,8 +727,8 @@ static void handle_browse_folders_navigation(struct deck *d, int deckno) {
         needsUpdate = true;
     }
 
-    /* KB0 = enter folder → show files */
-    if (kb0 == 1 && browseFolder) {
+    /* Knob click = enter folder → show files */
+    if (enter && browseFolder) {
         browseFile = browseFolder->FirstFile;
         browseFileIdx = 0;
         browseFileCount = 0;
@@ -739,8 +739,8 @@ static void handle_browse_folders_navigation(struct deck *d, int deckno) {
         needsUpdate = true;
     }
 
-    /* Rotary click = back to deck menu */
-    if (button_press == 1) {
+    /* KB0 or knob hold = back to deck menu */
+    if (back) {
         currentDeckMenuState = DECK_MENU_MAIN;
         selectedItem = 0;
         scrollOffset = 0;
@@ -802,8 +802,8 @@ static void display_browse_files(struct deck *d) {
 
 static void handle_browse_files_navigation(struct deck *d, int deckno) {
     int movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     if (movement != 0) {
         browseFileIdx = (browseFileIdx + movement + browseFileCount) % browseFileCount;
@@ -814,16 +814,16 @@ static void handle_browse_files_navigation(struct deck *d, int deckno) {
         needsUpdate = true;
     }
 
-    /* KB0 = load selected file */
-    if (kb0 == 1 && browseFile) {
+    /* Knob click = load selected file */
+    if (enter && browseFile) {
         d->CurrentFolder = browseFolder;
         d->CurrentFile = browseFile;
         load_track(d, track_acquire_by_import(d->importer, browseFile->FullPath));
         needsUpdate = true;
     }
 
-    /* Rotary click = back to folder list */
-    if (button_press == 1) {
+    /* KB0 or knob hold = back to folder list */
+    if (back) {
         browseScrollOffset = 0;
         currentDeckMenuState = DECK_MENU_BROWSE_FOLDERS;
         needsUpdate = true;
@@ -862,7 +862,7 @@ static void display_record_setup(struct deck *d, int deck_no) {
     }
 
     /* Instructions */
-    oled_text_color(40, 180, "KB0=select  ROT=back", FONT_SMALL,
+    oled_text_color(40, 180, "Click=select KB0=back", FONT_SMALL,
                     RGB565(100, 100, 100));
 
     oled_flush();
@@ -871,15 +871,15 @@ static void display_record_setup(struct deck *d, int deck_no) {
 
 static void handle_record_setup_navigation(struct deck *d, int deckno) {
     int movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     if (movement != 0) {
         setupSelectedItem = (setupSelectedItem + movement + REC_SETUP_ITEMS) % REC_SETUP_ITEMS;
         needsUpdate = true;
     }
 
-    if (kb0 == 1) {
+    if (enter) {
         if (setupSelectedItem == 0) {
             /* Source: cycle */
             setupSelectedSource = (setupSelectedSource + 1) % inputSourceCount;
@@ -891,7 +891,7 @@ static void handle_record_setup_navigation(struct deck *d, int deckno) {
         needsUpdate = true;
     }
 
-    if (button_press == 1) {
+    if (back) {
         if (mainMenuState == MENU_RECORD) {
             mainMenuState = MENU_MAIN;
             currentDeckMenuState = DECK_MENU_MAIN;
@@ -920,8 +920,8 @@ static void display_recording_status(struct deck *d, int deck_no) {
     if (((int)(secs * 2)) & 1)
         oled_fill_rect(DISPLAY_WIDTH / 2 - 4, 120, 8, 8, COLOR_RED);
 
-    int sw = st7789_string_width("KB0=stop  ROT=back", FONT_SMALL);
-    oled_text_color((DISPLAY_WIDTH - sw) / 2, 180, "KB0=stop  ROT=back",
+    int sw = st7789_string_width("Click=stop  KB0=back", FONT_SMALL);
+    oled_text_color((DISPLAY_WIDTH - sw) / 2, 180, "Click=stop  KB0=back",
                     FONT_SMALL, RGB565(130, 130, 130));
     oled_flush();
 }

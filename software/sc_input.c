@@ -517,97 +517,176 @@ unsigned char buttonState = 0;
 unsigned int butCounter = 0;
 unsigned char faderOpen1 = 0, faderOpen2 = 0;
 
-/* ── Cue button state ──────────────────────────────────────────── */
-static uint8_t last_button_byte = 0;
-static unsigned long cue_press_time[4] = {0, 0, 0, 0};
-#define CUE_LONG_PRESS_MS 1000
+/* ── Coloured buttons ──────────────────────────────────────────
+ * Yellow switches mode, in every mode. What red, green and blue do
+ * depends on the mode:
+ *   CUE       tap = jump to the cue, hold 1 s = set it (active deck)
+ *   SETTINGS  hold + spin the platter = pitch (red), platter speed
+ *             (green), volume (blue) of the active deck
+ *   PLAY      blue/green tap = previous/next sample (Deck 2),
+ *             hold = previous/next beat (Deck 1); red = beat start/stop */
+#define CUE_HOLD_MS   1000
+#define PLAY_HOLD_MS  600
+#define CONFIG_FILE   "/home/pi/.scratchtj/config.cfg"
+
 int cue_display_states[4] = {CUE_STATE_EMPTY, CUE_STATE_EMPTY,
                               CUE_STATE_EMPTY, CUE_STATE_EMPTY};
 
-/* ── Function mode state ──────────────────────────────────────── */
 volatile FunctionMode current_function_mode = FUNC_MODE_SETTINGS;
 volatile uint8_t settings_buttons_held = 0;
 volatile int active_deck = 1;  /* default: Deck 2 (index 1) */
 
-/* ── Cue button processing ─────────────────────────────────────── */
+/* Left to right on the panel */
+const int button_panel_order[4] = {BTN_BLUE, BTN_YELLOW, BTN_GREEN, BTN_RED};
+
+static uint8_t last_buttons = 0;           /* bitmask by button index */
+static unsigned long press_time[4];        /* 0 = not a press of this mode */
+static bool hold_done[4];                  /* hold (or press) action fired */
+static volatile bool mode_reset_pending = false;
+
 static unsigned long millis_now(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (unsigned long)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
-/* Remap Arduino pins to cue indices: A0→CUE1, A3→CUE2, A1→CUE3, A2→CUE4 */
-static const int cue_pin_map[4] = {0, 2, 3, 1}; /* bit index → cue index */
+const char *function_mode_name(FunctionMode mode) {
+    switch (mode) {
+    case FUNC_MODE_CUE:      return "CUE";
+    case FUNC_MODE_SETTINGS: return "SETTINGS";
+    case FUNC_MODE_PLAY:     return "PLAY";
+    default:                 return "?";
+    }
+}
+
+/* Fits the cue bar's slot */
+const char *function_mode_short(FunctionMode mode) {
+    switch (mode) {
+    case FUNC_MODE_CUE:      return "CUE";
+    case FUNC_MODE_SETTINGS: return "SET";
+    case FUNC_MODE_PLAY:     return "PLAY";
+    default:                 return "?";
+    }
+}
+
+/* Safe from the menu thread: the input thread drops the presses that
+ * began in the old mode when it handles the next packet */
+void function_mode_set(FunctionMode mode) {
+    current_function_mode = (FunctionMode)(mode % FUNC_MODE_COUNT);
+    mode_reset_pending = true;
+}
+
+/* Arduino bit → button index (A0 red, A1 yellow, A2 blue, A3 green) */
+static const int cue_pin_map[4] = {BTN_RED, BTN_YELLOW, BTN_BLUE, BTN_GREEN};
+
+static void cue_jump(int i, int ad) {
+    double pos = cues_get(&deck[ad].cues, i);
+    if (pos == CUE_UNSET)
+        return;
+    player_seek_to(&deck[ad].player, pos);
+    deck[ad].player.position = deck[ad].player.position - deck[ad].player.offset;
+    deck[ad].player.offset = 0.0;
+    float platterspeed;
+    get_variable_value("platterspeed", &platterspeed);
+    deck[ad].angleOffset = (deck[ad].player.position * platterspeed) - deck[ad].encoderAngle;
+    deck[ad].player.target_position = deck[ad].player.position;
+    cue_display_states[i] = CUE_STATE_ACTIVE;
+    printf("Cue %d triggered (Dk%d)\n", i + 1, ad + 1);
+}
+
+static void cue_store(int i, int ad) {
+    cues_set(&deck[ad].cues, i, player_get_elapsed(&deck[ad].player));
+    if (deck[ad].player.track && deck[ad].player.track->path)
+        cues_save_to_file(&deck[ad].cues, deck[ad].player.track->path);
+    cue_display_states[i] = CUE_STATE_SET;
+    printf("Cue %d set (Dk%d)\n", i + 1, ad + 1);
+}
+
+/* Deck 1 (index 0) plays the beats, Deck 2 (index 1) the samples */
+static void play_tap(int i) {
+    if (i == BTN_BLUE)
+        deck_prev_file(&deck[1]);
+    else if (i == BTN_GREEN)
+        deck_next_file(&deck[1]);
+}
+
+static void play_hold(int i) {
+    if (i == BTN_BLUE)
+        deck_prev_file(&deck[0]);
+    else if (i == BTN_GREEN)
+        deck_next_file(&deck[0]);
+}
 
 void process_cue_buttons(uint8_t button_byte) {
     unsigned long now = millis_now();
+    uint8_t cur = 0;
+    for (int bit = 0; bit < 4; bit++)
+        if ((button_byte >> bit) & 1)
+            cur |= 1 << cue_pin_map[bit];
+    uint8_t pressed = cur & ~last_buttons;
+    last_buttons = cur;
 
-    /* SETTINGS mode: track held buttons, skip cue operations */
-    if (current_function_mode == FUNC_MODE_SETTINGS) {
-        uint8_t prev_held = settings_buttons_held;
-        uint8_t held = 0;
-        for (int bit = 0; bit < 4; bit++) {
-            if ((button_byte >> bit) & 1)
-                held |= (1 << cue_pin_map[bit]);
-        }
-        /* Btn 2 (yellow, bit 2) in SETTINGS mode: hold + spin = bend (fader_pitch),
-         * turntable-style ±8% for beat sync. No tap action. */
-        settings_buttons_held = held;
-        /* Auto-save config when all buttons released after adjusting */
-        if (prev_held != 0 && held == 0)
-            save_variables_to_file("/home/pi/.scratchtj/config.cfg");
-        last_button_byte = button_byte;
-        return;
+    /* Yellow: next mode */
+    if (pressed & (1 << BTN_MODE))
+        function_mode_set(current_function_mode + 1);
+
+    /* A new mode starts clean: buttons still down from the old one are
+     * ignored until they are released */
+    if (mode_reset_pending) {
+        mode_reset_pending = false;
+        for (int i = 0; i < 4; i++)
+            press_time[i] = 0;
     }
 
-    /* CUE mode: clear settings state, run normal cue logic */
-    settings_buttons_held = 0;
+    FunctionMode mode = current_function_mode;
     int ad = active_deck;
+    uint8_t held = 0;
 
-    for (int bit = 0; bit < 4; bit++) {
-        int i = cue_pin_map[bit]; /* cue index */
-        int cur = (button_byte >> bit) & 1;
-        int prev = (last_button_byte >> bit) & 1;
+    for (int i = 0; i < 4; i++) {
+        if (i == BTN_MODE)
+            continue;
+        uint8_t m = 1 << i;
 
-        /* Rising edge - button pressed */
-        if (cur && !prev) {
-            cue_press_time[i] = now;
-        }
-
-        /* Long-press threshold reached while held — set cue immediately */
-        if (cur && cue_press_time[i] > 0 &&
-            (now - cue_press_time[i]) >= CUE_LONG_PRESS_MS &&
-            cue_press_time[i] != 1) {
-            cues_set(&deck[ad].cues, i, player_get_elapsed(&deck[ad].player));
-            if (deck[ad].player.track && deck[ad].player.track->path)
-                cues_save_to_file(&deck[ad].cues, deck[ad].player.track->path);
-            cue_display_states[i] = CUE_STATE_SET;
-            cue_press_time[i] = 1; /* mark as fired this press */
-            printf("Cue %d set (Dk%d)\n", i + 1, ad + 1);
-        }
-
-        /* Falling edge - button released */
-        if (!cur && prev) {
-            unsigned long held = (cue_press_time[i] == 1) ? CUE_LONG_PRESS_MS : (now - cue_press_time[i]);
-            if (held < CUE_LONG_PRESS_MS) {
-                /* Short press: jump to cue if set */
-                double pos = cues_get(&deck[ad].cues, i);
-                if (pos != CUE_UNSET) {
-                    player_seek_to(&deck[ad].player, pos);
-                    deck[ad].player.position = deck[ad].player.position - deck[ad].player.offset;
-                    deck[ad].player.offset = 0.0;
-                    float platterspeed;
-                    get_variable_value("platterspeed", &platterspeed);
-                    deck[ad].angleOffset = (deck[ad].player.position * platterspeed) - deck[ad].encoderAngle;
-                    deck[ad].player.target_position = deck[ad].player.position;
-                    cue_display_states[i] = CUE_STATE_ACTIVE;
-                    printf("Cue %d triggered (Dk%d)\n", i + 1, ad + 1);
-                }
+        if (pressed & m) {
+            press_time[i] = now;
+            hold_done[i] = false;
+            /* Red in PLAY acts on the press, so the beat starts on time */
+            if (mode == FUNC_MODE_PLAY && i == BTN_RED) {
+                deck[0].player.stopped = !deck[0].player.stopped;
+                hold_done[i] = true;
             }
         }
+        if (press_time[i] == 0)
+            continue;
+
+        if (cur & m) {
+            held |= m;
+            unsigned long hold_ms = (mode == FUNC_MODE_CUE) ? CUE_HOLD_MS : PLAY_HOLD_MS;
+            if (!hold_done[i] && now - press_time[i] >= hold_ms) {
+                hold_done[i] = true;
+                if (mode == FUNC_MODE_CUE)
+                    cue_store(i, ad);
+                else if (mode == FUNC_MODE_PLAY)
+                    play_hold(i);
+            }
+        } else {
+            /* Released before the hold time: a tap */
+            if (!hold_done[i]) {
+                if (mode == FUNC_MODE_CUE)
+                    cue_jump(i, ad);
+                else if (mode == FUNC_MODE_PLAY)
+                    play_tap(i);
+            }
+            press_time[i] = 0;
+        }
     }
 
-    last_button_byte = button_byte;
+    /* SETTINGS: held buttons turn the platter into an adjuster. Save
+     * the config once they are all let go (or the mode changes). */
+    uint8_t prev_held = settings_buttons_held;
+    settings_buttons_held = (mode == FUNC_MODE_SETTINGS) ? held : 0;
+    if (prev_held != 0 && settings_buttons_held == 0)
+        save_variables_to_file(CONFIG_FILE);
 }
 
 /* Note that the player used a control, for the screen saver */
@@ -787,10 +866,9 @@ void process_pic()
 #define SETTINGS_COUNTS_PER_STEP 200
 static int settings_accum[4] = {0, 0, 0, 0};
 
-/* Button 0 = note_pitch (fine, for tuning),
- * Button 1 = platterspeed (shared_var),
- * Button 2 = fader_pitch (turntable-style bend ±8%, for beat sync),
- * Button 3 = setVolume (blue button, up to 800%) */
+/* Red = note_pitch (fine, for tuning),
+ * Green = platterspeed (shared_var),
+ * Blue = setVolume (up to 800%). Yellow is the mode button. */
 static const char *settings_adj_names[4] = {
     NULL, "platterspeed", NULL, NULL
 };
@@ -816,22 +894,14 @@ static void settings_adjust_parameter(int btn, int delta) {
 
     double accel = platter_accel(delta);
     int ad = active_deck;
-    if (btn == 0) {
+    if (btn == BTN_RED) {
         /* Pitch: note_pitch — very fine step (0.001), for musical tuning */
         double pitch = deck[ad].player.note_pitch;
         pitch += steps * 0.001 * accel;
         if (pitch < 0.25) pitch = 0.25;
         if (pitch > 4.0) pitch = 4.0;
         deck[ad].player.note_pitch = pitch;
-    } else if (btn == 2) {
-        /* Bend: fader_pitch — turntable-style ±8% (0.92–1.08), for beat sync
-         * Persistent until reset; very fine step lets you nudge 0.1% at a time */
-        double bend = deck[ad].player.fader_pitch;
-        bend += steps * 0.001 * accel;
-        if (bend < 0.92) bend = 0.92;
-        if (bend > 1.08) bend = 1.08;
-        deck[ad].player.fader_pitch = bend;
-    } else if (btn == 3) {
+    } else if (btn == BTN_BLUE) {
         /* Volume: setVolume — up to 800% */
         double vol = deck[ad].player.setVolume;
         vol += steps * 0.02 * accel;
@@ -865,17 +935,23 @@ static int platter_deck = -1;   /* deck the platter was driving last time */
 static unsigned int numBlips = 0;
 
 /* ── Touch by motion ───────────────────────────────────────────── */
-/* With motion_touch on, a platter that is being turned counts as
+/* With motion_touch On, a platter that is being turned counts as
  * touched, so the instrument is playable when the capacitive sensor is
  * missing or unreliable. The platter has no motor: it only moves when a
  * hand moves it.
  *
  * What it cannot do is tell a hand holding the platter still from no
- * hand at all, so a held record resumes playing after MOTION_HOLD. */
+ * hand at all, so a held record resumes playing after MOTION_HOLD.
+ *
+ * With motion_touch Motor the platter is always in control, and a
+ * virtual motor turns the record on under it at motor speed (see
+ * motor_advance). Hand movement adds to or takes from the motor, and
+ * when the hand stops the record is simply back at motor speed. */
 
-/* Counts the platter must travel from rest before it is taken as a hand
- * (about 0.25 degrees): enough to ignore sensor jitter and knocks */
-#define MOTION_START_COUNTS 12
+/* How far the platter must travel from rest before it is taken as a
+ * hand is the Motion threshold setting (degrees), see
+ * motion_start_counts(). */
+
 /* Counts of travel that keep an existing touch alive. Above the few
  * counts of jitter the sensor shows at some angles, or a platter at
  * rest would never be released. */
@@ -884,20 +960,63 @@ static unsigned int numBlips = 0;
  * Must outlast the instant of standstill as a scratch reverses. */
 #define MOTION_HOLD 0.12
 /* While untouched, re-take the rest position this often, so that slow
- * creep never adds up to a false touch */
+ * creep never adds up to a false touch. The threshold has to be covered
+ * within about this time, so it is also a minimum speed. */
 #define MOTION_REANCHOR 0.25
 
-static bool motionTouched = false;
+bool motionTouched = false;
+volatile unsigned long motion_touch_count = 0; /* touches by motion so far (Config readout) */
 static int64_t activity_anchor;     /* platter count at the last activity check */
 static double activity_time;
 static int64_t motion_anchor;       /* platter count the travel is measured from */
 static double motion_time;          /* when the platter last moved (or was anchored) */
+static double motor_frac;           /* motor travel not yet added to angleOffset, in counts */
+static double motor_when;           /* time of the last motor_advance call */
 
 static void motion_touch_reset(double when)
 {
 	motionTouched = false;
 	motion_anchor = platter.count;
 	motion_time = when;
+}
+
+/* Motion threshold (degrees) as encoder counts, rounded up (the
+ * default 0.25 gives the 12 counts this always used), never below the
+ * travel that keeps a touch alive */
+static int motion_start_counts(void)
+{
+	int counts = (int)ceilf(cfg_motion_threshold * ENCODER_CPR / 360.0f);
+	return counts < MOTION_KEEP_COUNTS ? MOTION_KEEP_COUNTS : counts;
+}
+
+/* Touch by motion = Motor: move the record on at motor speed since the
+ * last reading, as if a motor drove it under the platter. Whole counts
+ * go into angleOffset, which every resync (grab, cue jump, new track)
+ * already sets afresh; the fraction is carried to the next reading.
+ * With run false it only keeps time. */
+static void motor_advance(struct deck *d, double when, float platterspeed, bool run)
+{
+	double dt = when - motor_when;
+	double speed = d->player.motor_speed;
+
+	motor_when = when;
+	if (!run) {
+		motor_frac = 0.0;
+		return;
+	}
+	/* A stalled input thread must not throw the record far ahead */
+	if (dt <= 0.0 || dt > 0.25)
+		return;
+	/* Stopped (or braking to a stop): the motor follows the brake down */
+	if (!(speed > 0.0))
+		return;
+	if (speed > 8.0)
+		speed = 8.0;
+
+	motor_frac += speed * dt * platterspeed;
+	int whole = (int)motor_frac;
+	d->angleOffset += whole;
+	motor_frac -= whole;
 }
 
 /* Update motionTouched from the platter position at time when */
@@ -920,9 +1039,10 @@ static void motion_touch_update(double when)
 			motion_touch_reset(when);
 		}
 	}
-	else if (travel >= MOTION_START_COUNTS)
+	else if (travel >= motion_start_counts())
 	{
 		motionTouched = true;
+		motion_touch_count++;
 		motion_anchor = platter.count;
 		motion_time = when;
 	}
@@ -998,7 +1118,9 @@ void process_rot(int raw, double when)
 	d->angleOffset += delta - (raw - d->encoderAngle);
 	d->encoderAngle = raw;
 
-	if (cfg_motion_touch >= 0.5f)
+	/* Touch by motion: 0 Off, 1 On, 2 Motor */
+	bool motor_mode = cfg_motion_touch >= 1.5f;
+	if (cfg_motion_touch >= 0.5f && !motor_mode)
 		motion_touch_update(when);
 	else
 		motion_touch_reset(when);
@@ -1051,21 +1173,29 @@ void process_rot(int raw, double when)
 	{
 		if (scsettings.platterenabled)
 		{
-			if (capIsTouched || motionTouched || d->player.motor_speed == 0.0)
+			if (capIsTouched || motionTouched || motor_mode || d->player.motor_speed == 0.0)
 			{
 				if (!d->player.capTouch || (oldPitchMode && !d->player.stopped))
 				{
 					/* Just grabbed: the platter's current angle becomes
 					 * the current track position */
 					d->angleOffset = (d->player.position * platterspeed) - d->encoderAngle;
+					motor_advance(d, when, platterspeed, false);
 					publish_platter(d, when, platterspeed);
 					d->player.capTouch = 1;
+				}
+				else
+				{
+					/* Motor: the record turns on by itself, unless the
+					 * touch sensor sees a hand holding it */
+					motor_advance(d, when, platterspeed, motor_mode && !capIsTouched);
 				}
 			}
 			else
 			{
 				d->player.capTouch = 0;
 			}
+			d->player.motor_drive = motor_mode && !capIsTouched;
 		}
 		else
 			d->player.capTouch = 1;

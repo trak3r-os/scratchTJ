@@ -63,8 +63,8 @@ void display_controller_menu(struct deck *d, int deck_no) {
 /* Handle Controller Menu Navigation */
 void handle_controller_menu_navigation(struct deck *d, int deckno) {
     int encoder_movement = rotary_encoder_moved();
-    int button_press = rotary_button_pressed();
-    int kb0 = kb0_button_pressed();
+    int back = menu_back_pressed();
+    int enter = menu_select_pressed();
 
     if (encoder_movement != 0) {
         selectedOption = (ControllerMenuOption)((selectedOption + encoder_movement +
@@ -72,8 +72,8 @@ void handle_controller_menu_navigation(struct deck *d, int deckno) {
         needsUpdate = true;
     }
 
-    /* KB0 = select */
-    if (kb0 == 1) {
+    /* Knob click = select */
+    if (enter) {
         switch (selectedOption) {
             case CONTROLLER_SOUND_SETTINGS:
                 enter_sound_settings_menu(d, deckno);
@@ -104,8 +104,8 @@ void handle_controller_menu_navigation(struct deck *d, int deckno) {
         }
         needsUpdate = true;
     }
-    /* Rotary click = back */
-    if (button_press == 1) {
+    /* KB0 or knob hold = back */
+    if (back) {
         mainMenuState = MENU_MAIN;
         needsUpdate = true;
     }
@@ -151,19 +151,19 @@ void enter_sound_settings_menu(struct deck *d, int deckno) {
 
     while (adjusting) {
         int movement = rotary_encoder_moved();
-        int button_press = rotary_button_pressed();
-        int kb0 = kb0_button_pressed();
+        int back = menu_back_pressed();
+        int enter = menu_select_pressed();
 
         if (movement != 0) {
             selectedControl = (selectedControl + movement + mixerControlCount) % mixerControlCount;
             needsUpdate = true;
         }
 
-        if (kb0 == 1) {
+        if (enter) {
             adjust_mixer_control(selectedControl);
             needsUpdate = true;
         }
-        if (button_press == 1) {
+        if (back) {
             adjusting = false;
         }
 
@@ -205,8 +205,8 @@ static void adjust_mixer_control(int selectedIndex) {
 
     while (adjusting) {
         int movement = rotary_encoder_moved();
-        int button_press = rotary_button_pressed();
-        int kb0 = kb0_button_pressed();
+        int back = menu_back_pressed();
+        int enter = menu_select_pressed();
 
         /* EC11 rotary = change value */
         if (movement != 0) {
@@ -226,12 +226,12 @@ static void adjust_mixer_control(int selectedIndex) {
             needsUpdate = true;
         }
 
-        /* KB0 = confirm */
-        if (kb0 == 1) {
+        /* Knob click = confirm */
+        if (enter) {
             adjusting = false;
         }
-        /* Rotary click = cancel (revert) */
-        if (button_press == 1) {
+        /* KB0 or knob hold = cancel (revert) */
+        if (back) {
             control->current = orig_current;
             control->currentEnumIndex = orig_enumIndex;
             apply_mixer_control(MIXER_CARD, control);
@@ -262,7 +262,7 @@ static bool save_config(void) {
 }
 
 /* One section of the Config menu (Platter, Fader & Volume, Screen):
- * each setting with its value; KB0 opens it, knob push goes back.
+ * each setting with its value; a knob click opens it, KB0 goes back.
  * Anything changed is saved on the way out. */
 void enter_settings_section(const char *section) {
     int count = 0;
@@ -284,19 +284,19 @@ void enter_settings_section(const char *section) {
 
     while (adjusting) {
         int movement = rotary_encoder_moved();
-        int button_press = rotary_button_pressed();
-        int kb0 = kb0_button_pressed();
+        int back = menu_back_pressed();
+        int enter = menu_select_pressed();
 
         if (movement != 0) {
             selected = (selected + movement + n) % n;
             needsUpdate = true;
         }
-        if (kb0 == 1) {
+        if (enter) {
             if (adjust_variable_value(items[selected]))
                 changed = true;
             needsUpdate = true;
         }
-        if (button_press == 1)
+        if (back)
             adjusting = false;
 
         if (needsUpdate) {
@@ -337,6 +337,15 @@ static bool setting_live_info(EditableVariable *v, float value, char *buf, size_
         unsigned int raw = cap_raw;
         snprintf(buf, n, "Sensor: %u  %s", raw,
                  raw > (unsigned int)value ? "TOUCHED" : "not touched");
+        return true;
+    }
+    if (strcmp(v->name, "motion_threshold") == 0) {
+        /* Nudge the platter: if the count goes up, that counted as a hand */
+        if (cfg_motion_touch < 0.5f || cfg_motion_touch >= 1.5f)
+            snprintf(buf, n, "Touch by motion is not On");
+        else
+            snprintf(buf, n, "Touches: %lu  %s", motion_touch_count,
+                     motionTouched ? "TOUCHED" : "");
         return true;
     }
     if (strcmp(v->name, "faderopenpoint") == 0 ||
@@ -422,12 +431,12 @@ static void draw_setting_screen(EditableVariable *v, float value) {
     if (curve)
         oled_draw_fader_curve(30, 150, 180, 52, cfg_curve_factor, cfg_curve_power);
 
-    oled_text_color(4, 208, "KB0: keep   Knob push: undo", FONT_SMALL,
+    oled_text_color(4, 208, "Click: keep   KB0: undo", FONT_SMALL,
                     RGB565(110, 110, 110));
 }
 
-/* Edit one setting. The knob changes it (it takes effect at once), KB0
- * keeps the new value, a knob push puts the old one back.
+/* Edit one setting. The knob changes it (it takes effect at once), a click
+ * keeps the new value, KB0 (or holding the knob) puts the old one back.
  * Returns true if the value was changed and kept. */
 static bool adjust_variable_value(EditableVariable *variable) {
     bool adjusting = true;
@@ -440,8 +449,8 @@ static bool adjust_variable_value(EditableVariable *variable) {
 
     while (adjusting) {
         int movement = rotary_encoder_moved();
-        int button_press = rotary_button_pressed();
-        int kb0 = kb0_button_pressed();
+        int back = menu_back_pressed();
+        int enter = menu_select_pressed();
         unsigned long now = ui_millis();
 
         /* EC11 rotary = change value */
@@ -477,13 +486,13 @@ static bool adjust_variable_value(EditableVariable *variable) {
             needsUpdate = true;
         }
 
-        /* KB0 = confirm */
-        if (kb0 == 1) {
+        /* Knob click = confirm */
+        if (enter) {
             kept = value != orig_value;
             adjusting = false;
         }
-        /* Rotary click = cancel (revert) */
-        if (button_press == 1) {
+        /* KB0 or knob hold = cancel (revert) */
+        if (back) {
             pthread_mutex_lock(&variable->mutex);
             *variable->valuePtr = orig_value;
             pthread_mutex_unlock(&variable->mutex);
@@ -516,7 +525,7 @@ static void show_confirm_screen(const char *line1, const char *line2) {
 
     /* Wait for any button press to dismiss */
     for (;;) {
-        if (rotary_button_pressed() || kb0_button_pressed())
+        if (menu_back_pressed() || menu_select_pressed())
             break;
         rotary_encoder_moved(); /* drain encoder */
         usleep(10000);
@@ -545,18 +554,18 @@ static void action_reset_defaults(void) {
 }
 
 /* Ask before doing something disruptive.
- * Return: true if KB0 was pressed (yes), false on rotary click (cancel) */
+ * Return: true on a knob click (yes), false on KB0 or knob hold (cancel) */
 static bool confirm_action(const char *question) {
     oled_clear();
-    oled_draw_confirm(question, "KB0=yes ROT=no");
+    oled_draw_confirm(question, "Click=yes KB0=no");
     oled_flush();
 
     for (;;) {
-        if (kb0_button_pressed() == 1) {
+        if (menu_select_pressed()) {
             needsUpdate = true;
             return true;
         }
-        if (rotary_button_pressed() == 1) {
+        if (menu_back_pressed()) {
             needsUpdate = true;
             return false;
         }

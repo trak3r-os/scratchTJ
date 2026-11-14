@@ -28,8 +28,11 @@ extern struct deck deck[];
 
 typedef struct SC_SETTINGS {
 
-    // output buffer size, probably 256
+    // output buffer size in frames, probably 256
     int buffersize;
+
+    // periods the buffer is split into (2 or more)
+    int periods;
 
     // sample rate, probably 48000
     int samplerate;

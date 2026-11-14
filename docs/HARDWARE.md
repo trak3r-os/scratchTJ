@@ -63,7 +63,7 @@ own USB cable (`/dev/ttyUSB0`, 500 000 baud):
 
 - the fader on **A5** (10-bit ADC),
 - the capacitive touch sensor on **D10 / D12**,
-- the four cue buttons on **A0–A3**.
+- the four coloured buttons on **A0–A3**.
 
 Why an Arduino: the Pi has no analog inputs, and capacitive sensing needs
 tight microsecond timing that a Linux user-space program cannot guarantee.
@@ -94,8 +94,9 @@ boards.
 One 40 × 65 mm board that carries:
 
 - a **1.54" ST7789 colour display**, 240 × 240 pixels, on SPI,
-- an **EC11 rotary encoder** with push switch (menu scroll / back),
-- a **push key** labelled `KEY0` (select / confirm).
+- an **EC11 rotary encoder** with push switch (turn to scroll, click to
+  select, hold for half a second to go back),
+- a **push key** labelled `KEY0` (back).
 
 It has a single 12-pin header, which keeps the wiring simple. The display is
 driven at 40 MHz SPI from a framebuffer in memory.
@@ -110,12 +111,13 @@ the high deck with two M3 screws into its own threaded holes (65 mm apart).
 Do not drive long screws into the fader: with the 3 mm deck, use M3 × 6
 countersunk or M3 × 5 pan head.
 
-### Cue buttons
+### Coloured buttons
 
 Four momentary push buttons with a 7 mm threaded bushing, mounted through the
 low deck. They connect between Arduino A0–A3 and GND (internal pull-ups, no
-resistors). Use four colours: the software refers to them as red, green,
-yellow and blue.
+resistors). Use four colours: on the panel, from left to right, **blue,
+yellow, green, red**. Yellow is the mode button (CUE / SETTINGS / PLAY); what
+the other three do depends on the mode, see [USAGE.md](USAGE.md).
 
 ### Platter and axle
 
@@ -161,8 +163,8 @@ The printed hub, spacer, bearing retainer, bearing collar and platter cap
                          │                                                    │
  EC11 knob      A   ────►│ GPIO 23 [16]  (CLK)                                │
                 B   ────►│ GPIO 22 [15]  (DT)                                 │
-                push────►│ GPIO 27 [13]  (back / long press = switch deck)    │
- KEY0 key       ────────►│ GPIO 17 [11]  (select / confirm)                   │
+                push────►│ GPIO 27 [13]  (click = select, hold = back)        │
+ KEY0 key       ────────►│ GPIO 17 [11]  (back)                               │
                          │                                                    │
  Arduino Nano   ◄═══════►│ USB port  (/dev/ttyUSB0, 500 000 baud, also power) │
                          └────────────────────────────────────────────────────┘
@@ -172,10 +174,10 @@ The printed hub, spacer, bearing retainer, bearing collar and platter cap
  Innofader      out ────►│ A5                                                 │
                 VCC ◄────│ 5V                                                 │
                 GND ─────│ GND                                                │
- Cue 1 (red)    ────────►│ A0  ─┐                                             │
- Cue 2 (green)  ────────►│ A1   │ other side of each button to GND           │
- Cue 3 (yellow) ────────►│ A2   │                                             │
- Cue 4 (blue)   ────────►│ A3  ─┘                                             │
+ Red button     ────────►│ A0  ─┐                                             │
+ Yellow (mode)  ────────►│ A1   │ other side of each button to GND           │
+ Blue button    ────────►│ A2   │                                             │
+ Green button   ────────►│ A3  ─┘                                             │
                          │ D10 ──[ 1.2 kΩ ]──┐                                │
  Touch wire     ────────►│ D12 ──────────────┘  (wire to the bearing seat)    │
                          └────────────────────────────────────────────────────┘
@@ -190,12 +192,12 @@ The printed hub, spacer, bearing retainer, bearing collar and platter cap
 | 8 | 24 | Display CS | Out |
 | 10 | 19 | Display SDA (MOSI) | Out |
 | 11 | 23 | Display SCL (SCLK) | Out |
-| 17 | 11 | KEY0 key | In, active low |
+| 17 | 11 | KEY0 key (back) | In, active low |
 | 22 | 15 | EC11 B (DT) | In |
 | 23 | 16 | EC11 A (CLK) | In |
 | 24 | 18 | Display DC | Out |
 | 25 | 22 | Display RES | Out |
-| 27 | 13 | EC11 push switch | In, active low |
+| 27 | 13 | EC11 push switch (select; hold = back) | In, active low |
 | 18–21 | 12, 35, 38, 40 | AudioInjector (I2S) | Used by the HAT |
 
 Power both the MT6701 and the display module from the Pi **3.3 V** pins (1 or
@@ -210,10 +212,10 @@ and `software/oled_display.c` (display DC / RES).
 | Pin | Connects to | Notes |
 |-----|-------------|-------|
 | A5 | Fader output | 10-bit analog |
-| A0 | Cue 1 (red) | To GND when pressed, internal pull-up |
-| A1 | Cue 2 (green) | " |
-| A2 | Cue 3 (yellow) | " |
-| A3 | Cue 4 (blue) | " |
+| A0 | Red button | To GND when pressed, internal pull-up |
+| A1 | Yellow button (mode) | " |
+| A2 | Blue button | " |
+| A3 | Green button | " |
 | D10 | Touch send | Through the 1.2 kΩ resistor to D12 |
 | D12 | Touch sense | Also to the touch wire |
 | 5V / GND | Fader supply | |
@@ -263,11 +265,12 @@ top.
 The serial port resets the Arduino when xwax opens it, and the touch baseline
 is measured right then.
 
-**No touch?** Turn on *Config → Platter → Touch by motion*. A moving platter
-then counts as touched, and a platter held still is released after a fraction
-of a second. This lets you play while you debug the touch circuit. Turn it off
-again once touch works, because it makes the record slower to restart after a
-fast spin.
+**No touch?** Set *Config → Platter → Touch by motion* to **On** or
+**Motor**. With On, a moving platter counts as touched, and a platter held
+still is released after a fraction of a second. With Motor, the record always
+turns at normal speed and the platter adds to or takes from it. Either lets you
+play while you debug the touch circuit; see [SETTINGS.md](SETTINGS.md#touch-by-motion).
+Turn it off again once touch works.
 
 ---
 

@@ -20,7 +20,6 @@ static int deck_count;
 bool needsUpdate = true;
 MainMenuState mainMenuState = MENU_HOME;
 
-static unsigned long lastButtonPressTime = 0;
 
 /* Auto-return and home screen refresh timers */
 static unsigned long lastActivityTime = 0;
@@ -129,14 +128,24 @@ void poll_rotary_encoder() {
     if (deck_count >= 2) {
         int ad = active_deck;
         double cue_positions[4];
-        for (int i = 0; i < 4; i++)
+        int states[4];
+        for (int i = 0; i < 4; i++) {
+            /* Set or empty comes from the deck itself, so the bar follows
+             * track loads and deck switches; ACTIVE is the jump flash */
             cue_positions[i] = cues_get(&decks[ad]->cues, i);
-        oled_set_cue_overlay(cue_display_states, cue_positions);
+            if (cue_positions[i] == CUE_UNSET)
+                states[i] = CUE_STATE_EMPTY;
+            else if (cue_display_states[i] == CUE_STATE_ACTIVE)
+                states[i] = CUE_STATE_ACTIVE;
+            else
+                states[i] = CUE_STATE_SET;
+        }
+        oled_set_cue_overlay(states, cue_positions);
     }
 
     handle_main_menu_navigation(decks, deck_count);
 
-    /* Auto-return removed: rotary push = back is sufficient,
+    /* No auto-return to home: KB0 or holding the knob goes back,
      * and auto-return caused problems during recording and other
      * functional screens (volume adjust, etc.) */
 
@@ -207,79 +216,91 @@ int rotary_encoder_moved() {
     return 0;
 }
 
-/* Detects rotary button: 1=short click (back), 2=long press (mode toggle)
- * Faster debounce (30ms vs old 100ms) + long press at 500ms while held */
-#define ROTARY_DEBOUNCE_READS  6    /* ~30ms at 200Hz */
-#define ROTARY_ANTICHATTER_MS  150
-#define ROTARY_LONG_PRESS_MS   500
+/* ── Menu buttons ──────────────────────────────────────────────
+ * Knob push (ROTARY_SW): click = enter/select, hold = back.
+ * KB0 (GPIO17): press = back.
+ *
+ * nav_poll() samples both pins and leaves at most one pending event of
+ * each kind; menu_select_pressed() and menu_back_pressed() take them.
+ * Debouncing is by time, so a screen polling both in one pass is fine.
+ * An event a screen does not ask for is dropped after NAV_EVENT_TTL_MS
+ * so it cannot leak into the next screen. */
+#define NAV_DEBOUNCE_MS   25
+#define NAV_HOLD_MS       500
+#define NAV_EVENT_TTL_MS  60
 
-int rotary_button_pressed() {
-    static unsigned long lastRotRelease = 0;
-    static int pressedCount = 0;
-    static int releasedCount = 0;
-    static bool confirmed = false;
-    static bool longPressFired = false;
-    bool raw = gpio_read(ROTARY_SW) == 0; /* active low */
-    unsigned long now = gpio_millis();
+typedef struct {
+    bool raw;               /* last raw reading */
+    unsigned long raw_at;   /* when the raw reading last changed */
+    bool down;              /* debounced state */
+    unsigned long down_at;  /* when the debounced press began */
+    bool held;              /* the hold was already reported */
+} NavButton;
 
-    if (raw) {
-        pressedCount++;
-        releasedCount = 0;
-        if (pressedCount >= ROTARY_DEBOUNCE_READS && !confirmed) {
-            confirmed = true;
-            lastButtonPressTime = now;
-            longPressFired = false;
-        }
-        /* Long press: fire once at threshold while still held */
-        if (confirmed && !longPressFired &&
-            (now - lastButtonPressTime) >= ROTARY_LONG_PRESS_MS) {
-            longPressFired = true;
-            lastActivityTime = menu_millis();
-            return screen_wake_by_menu() ? 0 : 2;  /* long press = mode toggle */
-        }
-    } else {
-        releasedCount++;
-        pressedCount = 0;
-        if (confirmed && releasedCount >= 3) {
-            confirmed = false;
-            if (!longPressFired && (now - lastRotRelease) > ROTARY_ANTICHATTER_MS) {
-                lastRotRelease = now;
-                lastButtonPressTime = 0;
-                lastActivityTime = menu_millis();
-                longPressFired = false;
-                return screen_wake_by_menu() ? 0 : 1;  /* short click = back */
-            }
-            longPressFired = false;
-        }
-        if (releasedCount >= 5) { confirmed = false; longPressFired = false; }
+static NavButton nav_push, nav_kb0;
+static unsigned long nav_select_at = 0, nav_back_at = 0;  /* 0 = none */
+static bool nav_back_hold = false;
+
+/* +1 on a debounced press, -1 on a release, 0 otherwise */
+static int nav_debounce(NavButton *b, bool raw, unsigned long now) {
+    if (raw != b->raw) {
+        b->raw = raw;
+        b->raw_at = now;
+        return 0;
     }
-    return 0;
+    if (raw == b->down || now - b->raw_at < NAV_DEBOUNCE_MS)
+        return 0;
+    b->down = raw;
+    if (raw) {
+        b->down_at = now;
+        b->held = false;
+        return 1;
+    }
+    return -1;
 }
 
-/* KB0 button (GPIO17): 1 on release (select/enter), 0 otherwise */
-int kb0_button_pressed() {
-    static unsigned long kb0PressTime = 0;
-    static unsigned long kb0LastRelease = 0;
-
-    bool pressed = gpio_read(ROTARY_KO) == 0;  /* active low */
+static void nav_poll(void) {
     unsigned long now = gpio_millis();
+    if (now == 0) now = 1;   /* 0 means "no event" */
 
-    if (pressed) {
-        if (kb0PressTime == 0) kb0PressTime = now;
-    } else {
-        if (kb0PressTime > 0 && (now - kb0PressTime) > 30) {
-            /* Debounce: ignore presses shorter than 30ms (bounce) */
-            /* Also enforce 100ms cooldown between events */
-            if ((now - kb0LastRelease) > 100) {
-                kb0PressTime = 0;
-                kb0LastRelease = now;
-                lastActivityTime = menu_millis();
-                return screen_wake_by_menu() ? 0 : 1;  /* click = select */
-            }
-        }
-        kb0PressTime = 0;
+    int e = nav_debounce(&nav_push, gpio_read(ROTARY_SW) == 0, now);
+    if (nav_push.down && !nav_push.held &&
+        now - nav_push.down_at >= NAV_HOLD_MS) {
+        nav_push.held = true;          /* hold: back, while still held */
+        nav_back_at = now;
+        nav_back_hold = true;
+    } else if (e < 0 && !nav_push.held) {
+        nav_select_at = now;           /* click: select */
     }
-    return 0;
+
+    if (nav_debounce(&nav_kb0, gpio_read(ROTARY_KO) == 0, now) > 0) {
+        nav_back_at = now;
+        nav_back_hold = false;
+    }
+}
+
+static int nav_take(unsigned long *at) {
+    nav_poll();
+    if (*at == 0)
+        return 0;
+    unsigned long age = gpio_millis() - *at;
+    *at = 0;
+    if (age > NAV_EVENT_TTL_MS)
+        return 0;
+    lastActivityTime = menu_millis();
+    return screen_wake_by_menu() ? 0 : 1;
+}
+
+int menu_select_pressed(void) {
+    return nav_take(&nav_select_at);
+}
+
+int menu_back_pressed(void) {
+    return nav_take(&nav_back_at);
+}
+
+bool menu_back_was_hold(void) {
+    return nav_back_hold;
 }
 
 void trigger_io_event(unsigned char action, unsigned char deckNo, unsigned char param) {

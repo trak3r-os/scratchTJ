@@ -19,6 +19,7 @@ float cfg_platterspeed = 9100.0f;
 float cfg_jogreverse = 1.0f;
 float cfg_touch_threshold = 5000.0f;
 float cfg_motion_touch = 0.0f;
+float cfg_motion_threshold = 0.25f;
 float cfg_slippiness = 200.0f;
 float cfg_brakespeed = 3000.0f;
 float cfg_target_pitch = 40.0f;
@@ -40,6 +41,7 @@ float cfg_soft_clip = 0.0f;
 /* Screen */
 float cfg_screen_off = 10.0f;
 
+static const char *const motion_touch_names[] = { "Off", "On", "Motor" };
 static const char *const fader_mode_names[] = { "SC1000 cut", "Curve" };
 static const char *const cutbeats_names[] = { "Off", "Left end", "Right end" };
 static const char *const fader_dir_names[] = { "Reversed", "Normal" };
@@ -76,14 +78,28 @@ static const SettingInfo settings[] = {
     },
     {
         .name = "motion_touch", .valuePtr = &cfg_motion_touch,
-        .minValue = 0, .maxValue = 1, .stepSize = 1,
-        .kind = VAR_ONOFF,
+        .minValue = 0, .maxValue = 2, .stepSize = 1,
+        .kind = VAR_CHOICE, .choices = motion_touch_names,
         .section = SECTION_PLATTER, .label = "Touch by motion",
-        .help = "Also count the platter as touched while it is being "
-                "turned. Only for when the touch sensor does not work: "
-                "a held record starts playing as soon as you stop "
-                "moving it, and a spinning platter keeps control for a "
-                "moment after you let go. Default: Off.",
+        .help = "For when the touch sensor does not work. On: turning "
+                "the platter counts as touching it, but a held record "
+                "starts playing as soon as you stop moving it. Motor: "
+                "the record always turns as if a motor drove it, and "
+                "the platter adds to or takes from that speed; when you "
+                "stop, it is back at normal speed. If the touch sensor "
+                "sees your hand, the motor lets go so you can hold the "
+                "record. Default: Off.",
+    },
+    {
+        .name = "motion_threshold", .valuePtr = &cfg_motion_threshold,
+        .minValue = 0.25f, .maxValue = 10, .stepSize = 0.25f,
+        .kind = VAR_NUMBER, .decimals = 2, .unit = "deg",
+        .section = SECTION_PLATTER, .label = "Motion threshold",
+        .help = "With Touch by motion On: how far the platter has to "
+                "turn, within about a quarter of a second, before it "
+                "counts as your hand. Raise it if a light touch or a "
+                "knock stops the sound. Too high and slow moves are "
+                "missed. Default: 0.25 degrees.",
     },
     {
         .name = "slippiness", .valuePtr = &cfg_slippiness,

@@ -97,6 +97,7 @@ void loadSettings()
 	char *linetok, *valuetok;
 	// set defaults
 	scsettings.buffersize = 256;
+	scsettings.periods = 2;
 	/* SC500 values (Innofader Mini Pro) */
 	scsettings.faderclosepoint = 3;
 	scsettings.faderopenpoint = 5;
@@ -145,6 +146,8 @@ void loadSettings()
 
 				if (strcmp(param, "buffersize") == 0)
 					scsettings.buffersize = atoi(value);
+				else if (strcmp(param, "periods") == 0)
+					scsettings.periods = atoi(value);
 				else if (strcmp(param, "faderclosepoint") == 0)
 					scsettings.faderclosepoint = atoi(value);
 				else if (strcmp(param, "faderopenpoint") == 0)
@@ -353,8 +356,8 @@ int main(int argc, char *argv[])
 
 	rate = 48000;
 
-	alsa_init(&deck[0].device, "plughw:1,0", rate, scsettings.buffersize, 0);
-	alsa_init(&deck[1].device, "plughw:1,0", rate, scsettings.buffersize, 1);
+	alsa_init(&deck[0].device, "plughw:1,0", rate, scsettings.buffersize, scsettings.periods, 0);
+	alsa_init(&deck[1].device, "plughw:1,0", rate, scsettings.buffersize, scsettings.periods, 1);
 
 	deck_init(&deck[0], &rt, importer, 1.0, false, false, 0);
 	deck_init(&deck[1], &rt, importer, 1.0, false, false, 1);
