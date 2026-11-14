@@ -525,7 +525,9 @@ unsigned char faderOpen1 = 0, faderOpen2 = 0;
  *             platter speed (green) of the active deck
  *   PLAY      blue/green tap = previous/next sample (Deck 2),
  *             hold = previous/next beat (Deck 1); yellow = beat
- *             start/stop */
+ *             start/stop
+ *   DECKS     play/stop Deck 1 (blue), Deck 2 (green) or both
+ *             (yellow) */
 #define CUE_HOLD_MS   1000
 #define PLAY_HOLD_MS  600
 #define CONFIG_FILE   "/home/pi/.scratchtj/config.cfg"
@@ -556,6 +558,7 @@ const char *function_mode_name(FunctionMode mode) {
     case FUNC_MODE_CUE:      return "CUE";
     case FUNC_MODE_SETTINGS: return "SETTINGS";
     case FUNC_MODE_PLAY:     return "PLAY";
+    case FUNC_MODE_DECKS:    return "DECKS";
     default:                 return "?";
     }
 }
@@ -566,6 +569,7 @@ const char *function_mode_short(FunctionMode mode) {
     case FUNC_MODE_CUE:      return "CUE";
     case FUNC_MODE_SETTINGS: return "SET";
     case FUNC_MODE_PLAY:     return "PLAY";
+    case FUNC_MODE_DECKS:    return "DECKS";
     default:                 return "?";
     }
 }
@@ -618,6 +622,21 @@ static void play_hold(int i) {
         deck_next_file(&deck[0]);
 }
 
+/* DECKS: play / stop a deck, or both. Both stops them if either one
+ * is playing, and starts them together if neither is. Stopping brakes
+ * like a turntable (Brake length). */
+static void decks_press(int i) {
+    if (i == BTN_DECKS_1) {
+        deck[0].player.stopped = !deck[0].player.stopped;
+    } else if (i == BTN_DECKS_2) {
+        deck[1].player.stopped = !deck[1].player.stopped;
+    } else if (i == BTN_DECKS_BOTH) {
+        bool stop = !deck[0].player.stopped || !deck[1].player.stopped;
+        deck[0].player.stopped = stop;
+        deck[1].player.stopped = stop;
+    }
+}
+
 void process_cue_buttons(uint8_t button_byte) {
     unsigned long now = millis_now();
     uint8_t cur = 0;
@@ -654,6 +673,9 @@ void process_cue_buttons(uint8_t button_byte) {
             /* Start / stop acts on the press, so the beat starts on time */
             if (mode == FUNC_MODE_PLAY && i == BTN_PLAY_START) {
                 deck[0].player.stopped = !deck[0].player.stopped;
+                hold_done[i] = true;
+            } else if (mode == FUNC_MODE_DECKS) {
+                decks_press(i);
                 hold_done[i] = true;
             }
         }
@@ -938,23 +960,17 @@ static int platter_deck = -1;   /* deck the platter was driving last time */
 static unsigned int numBlips = 0;
 
 /* ── Touch by motion ───────────────────────────────────────────── */
-/* With motion_touch On, a platter that is being turned counts as
+/* With motion_touch on, a platter that is being turned counts as
  * touched, so the instrument is playable when the capacitive sensor is
  * missing or unreliable. The platter has no motor: it only moves when a
  * hand moves it.
  *
  * What it cannot do is tell a hand holding the platter still from no
- * hand at all, so a held record resumes playing after MOTION_HOLD.
- *
- * With motion_touch Motor the platter is always in control, and a
- * virtual motor turns the record on under it at motor speed (see
- * motor_advance). Hand movement adds to or takes from the motor, and
- * when the hand stops the record is simply back at motor speed. */
+ * hand at all, so a held record resumes playing after MOTION_HOLD. */
 
-/* How far the platter must travel from rest before it is taken as a
- * hand is the Motion threshold setting (degrees), see
- * motion_start_counts(). */
-
+/* Counts the platter must travel from rest before it is taken as a hand
+ * (about 0.25 degrees): enough to ignore sensor jitter and knocks */
+#define MOTION_START_COUNTS 12
 /* Counts of travel that keep an existing touch alive. Above the few
  * counts of jitter the sensor shows at some angles, or a platter at
  * rest would never be released. */
@@ -963,128 +979,20 @@ static unsigned int numBlips = 0;
  * Must outlast the instant of standstill as a scratch reverses. */
 #define MOTION_HOLD 0.12
 /* While untouched, re-take the rest position this often, so that slow
- * creep never adds up to a false touch. The threshold has to be covered
- * within about this time, so it is also a minimum speed. */
+ * creep never adds up to a false touch */
 #define MOTION_REANCHOR 0.25
 
-/* Free spin (Motor takeover setting). A platter that is let go keeps
- * turning on its own, and without a touch sensor that looked like a
- * hand until it stopped. But a free platter can only slow down, and
- * gently (bearing friction); a hand speeds it up, reverses it or
- * brakes it hard. Once the platter has turned with no sign of a hand
- * for the takeover time, the virtual motor gets the record back (at
- * the Slipmat rate) and the spinning platter is ignored, until a hand
- * shows again or the platter stops. Speeds in track speed (1 = normal):
- *   SPIN_WIN            platter speed is compared over this window
- *   SPIN_BRAKE_REL/ABS  hardest slowing still taken as friction,
- *                       REL * speed + ABS per second
- *   SPIN_NOISE_ABS/REL  speed changes smaller than this are noise
- *   SPIN_STOPPED        below this speed the platter has stopped
- * Tuned in a simulation: with 250 ms, scratches of one stroke a second
- * or faster are never let go, and a free platter is let go within
- * about 300 ms. Very slow, smooth hand moves can pass for free spin. */
-#define SPIN_WIN        0.020
-#define SPIN_BRAKE_REL  2.0
-#define SPIN_BRAKE_ABS  0.5
-#define SPIN_NOISE_ABS  0.01
-#define SPIN_NOISE_REL  0.015
-#define SPIN_STOPPED    0.0055
-
-bool motionTouched = false;
-volatile unsigned long motion_touch_count = 0; /* touches by motion so far (Config readout) */
-volatile bool spin_free = false;    /* the platter spins on its own; the motor has the record */
-static double spin_win_v, spin_win_t, spin_hand_t;
+static bool motionTouched = false;
 static int64_t activity_anchor;     /* platter count at the last activity check */
 static double activity_time;
 static int64_t motion_anchor;       /* platter count the travel is measured from */
 static double motion_time;          /* when the platter last moved (or was anchored) */
-static double motor_frac;           /* motor travel not yet added to angleOffset, in counts */
-static double motor_when;           /* time of the last motor_advance call */
 
 static void motion_touch_reset(double when)
 {
 	motionTouched = false;
 	motion_anchor = platter.count;
 	motion_time = when;
-}
-
-/* Motion threshold (degrees) as encoder counts, rounded up (the
- * default 0.25 gives the 12 counts this always used), never below the
- * travel that keeps a touch alive */
-static int motion_start_counts(void)
-{
-	int counts = (int)ceilf(cfg_motion_threshold * ENCODER_CPR / 360.0f);
-	return counts < MOTION_KEEP_COUNTS ? MOTION_KEEP_COUNTS : counts;
-}
-
-/* Touch by motion = Motor: move the record on at motor speed since the
- * last reading, as if a motor drove it under the platter. Whole counts
- * go into angleOffset, which every resync (grab, cue jump, new track)
- * already sets afresh; the fraction is carried to the next reading.
- * With run false it only keeps time. */
-static void motor_advance(struct deck *d, double when, float platterspeed, bool run)
-{
-	double dt = when - motor_when;
-	double speed = d->player.motor_speed;
-
-	motor_when = when;
-	if (!run) {
-		motor_frac = 0.0;
-		return;
-	}
-	/* A stalled input thread must not throw the record far ahead */
-	if (dt <= 0.0 || dt > 0.25)
-		return;
-	/* Stopped (or braking to a stop): the motor follows the brake down */
-	if (!(speed > 0.0))
-		return;
-	if (speed > 8.0)
-		speed = 8.0;
-
-	motor_frac += speed * dt * platterspeed;
-	int whole = (int)motor_frac;
-	d->angleOffset += whole;
-	motor_frac -= whole;
-}
-
-/* Watch the platter speed for a hand: true if, since the last window,
- * it sped up, reversed or slowed faster than friction can */
-static bool spin_watch(double speed, double when)
-{
-	double dt = when - spin_win_t;
-	bool hand = false;
-
-	if (dt < SPIN_WIN)
-		return false;
-	if (dt < 0.1) {   /* after a gap in the readings, just start again */
-		double s0 = fabs(spin_win_v), s1 = fabs(speed);
-		double noise = SPIN_NOISE_ABS + SPIN_NOISE_REL * s0;
-		if (spin_win_v * speed < 0.0 && s0 > noise && s1 > noise)
-			hand = true;   /* reversed */
-		else if (s1 > s0 + noise)
-			hand = true;   /* sped up */
-		else if (s0 - s1 > (SPIN_BRAKE_REL * s0 + SPIN_BRAKE_ABS) * dt + noise)
-			hand = true;   /* braked */
-	}
-	spin_win_v = speed;
-	spin_win_t = when;
-	return hand;
-}
-
-/* Enter or leave free spin. in_control: the platter has the record */
-static void spin_update(double when, double speed, bool hand, bool in_control)
-{
-	double takeover = cfg_motor_takeover / 1000.0;
-
-	if (hand)
-		spin_hand_t = when;
-	if (spin_free) {
-		if (hand || takeover <= 0.0 || fabs(speed) < SPIN_STOPPED)
-			spin_free = false;
-	} else if (in_control && takeover > 0.0 && fabs(speed) >= SPIN_STOPPED &&
-	           when - spin_hand_t >= takeover) {
-		spin_free = true;
-	}
 }
 
 /* Update motionTouched from the platter position at time when */
@@ -1107,11 +1015,9 @@ static void motion_touch_update(double when)
 			motion_touch_reset(when);
 		}
 	}
-	else if (travel >= motion_start_counts())
+	else if (travel >= MOTION_START_COUNTS)
 	{
 		motionTouched = true;
-		motion_touch_count++;
-		spin_hand_t = when;
 		motion_anchor = platter.count;
 		motion_time = when;
 	}
@@ -1121,35 +1027,10 @@ static void motion_touch_update(double when)
 	}
 }
 
-/* Touch by motion On, with free spin: a spinning platter that no hand
- * is on is let go, and a hand coming back grabs it again */
-static void motion_touch_on(double when, double speed, bool hand)
-{
-	bool was_free = spin_free;
-
-	spin_update(when, speed, hand, motionTouched);
-	if (spin_free) {
-		motionTouched = false;
-		motion_anchor = platter.count;
-		motion_time = when;
-	} else if (was_free && hand) {
-		motionTouched = true;
-		motion_touch_count++;
-		motion_anchor = platter.count;
-		motion_time = when;
-	} else if (was_free) {
-		motion_touch_reset(when);
-	} else {
-		motion_touch_update(when);
-	}
-}
-
 /* Hand the current platter state to the audio thread */
 static void publish_platter(struct deck *d, double when, float platterspeed)
 {
-	/* In free spin the motor has the record: the platter's own speed
-	 * must not be fed forward */
-	d->player.platter_velocity = spin_free ? 0.0 : platter.velocity / platterspeed;
+	d->player.platter_velocity = platter.velocity / platterspeed;
 	d->player.platter_time = when;
 	d->player.target_position = (double)(d->encoderAngle + d->angleOffset) / platterspeed;
 }
@@ -1212,24 +1093,10 @@ void process_rot(int raw, double when)
 	d->angleOffset += delta - (raw - d->encoderAngle);
 	d->encoderAngle = raw;
 
-	/* Touch by motion: 0 Off, 1 On, 2 Motor */
-	bool motor_mode = cfg_motion_touch >= 1.5f;
-	double speed = platter.velocity / platterspeed;
-	bool hand = spin_watch(speed, when) || capIsTouched;
-	if (cfg_motion_touch >= 0.5f && !motor_mode) {
-		motion_touch_on(when, speed, hand);
-	} else {
+	if (cfg_motion_touch >= 0.5f)
+		motion_touch_update(when);
+	else
 		motion_touch_reset(when);
-		if (motor_mode) {
-			/* Free spin: the motor alone moves the record, so take the
-			 * platter's own travel back out */
-			spin_update(when, speed, hand, true);
-			if (spin_free)
-				d->angleOffset -= delta;
-		} else {
-			spin_free = false;
-		}
-	}
 
 	/* Screen saver: about 1.5 degrees of real travel counts as using
 	 * the platter. The anchor is re-taken every couple of seconds so
@@ -1279,29 +1146,21 @@ void process_rot(int raw, double when)
 	{
 		if (scsettings.platterenabled)
 		{
-			if (capIsTouched || motionTouched || motor_mode || d->player.motor_speed == 0.0)
+			if (capIsTouched || motionTouched || d->player.motor_speed == 0.0)
 			{
 				if (!d->player.capTouch || (oldPitchMode && !d->player.stopped))
 				{
 					/* Just grabbed: the platter's current angle becomes
 					 * the current track position */
 					d->angleOffset = (d->player.position * platterspeed) - d->encoderAngle;
-					motor_advance(d, when, platterspeed, false);
 					publish_platter(d, when, platterspeed);
 					d->player.capTouch = 1;
-				}
-				else
-				{
-					/* Motor: the record turns on by itself, unless the
-					 * touch sensor sees a hand holding it */
-					motor_advance(d, when, platterspeed, motor_mode && !capIsTouched);
 				}
 			}
 			else
 			{
 				d->player.capTouch = 0;
 			}
-			d->player.motor_drive = motor_mode && !capIsTouched;
 		}
 		else
 			d->player.capTouch = 1;

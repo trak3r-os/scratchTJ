@@ -2,7 +2,7 @@
 
 - [Controls](#controls)
 - [Home screen](#home-screen)
-- [Coloured buttons: CUE, SETTINGS and PLAY modes](#coloured-buttons-cue-settings-and-play-modes)
+- [Coloured buttons: CUE, SETTINGS, PLAY and DECKS modes](#coloured-buttons-cue-settings-play-and-decks-modes)
 - [Menu tree](#menu-tree)
 - [Recording](#recording)
 - [Settings](#settings)
@@ -20,7 +20,7 @@
 | **Knob, click** | Select / confirm / enter. From the home screen, opens the main menu |
 | **Knob, hold (0.5 s)** | Back / cancel, like KEY0. On the home screen: switch the active deck (DECK 1 ↔ DECK 2); platter, cue buttons and screen follow it |
 | **KEY0 key** | Back / cancel |
-| **Red button** | Switch the button mode: CUE → SETTINGS → PLAY |
+| **Red button** | Switch the button mode: CUE → SETTINGS → PLAY → DECKS |
 | **Blue, yellow, green buttons** | Depend on the mode, see below |
 
 ---
@@ -43,17 +43,18 @@ The home screen shows the active deck:
   (blue, yellow, green, red). The cue slots show the stored cue times; the
   red slot names the mode.
 
-The title bar shows **[S]** in SETTINGS mode and **[P]** in PLAY mode.
+The title bar shows **[S]** in SETTINGS mode, **[P]** in PLAY mode and **[D]**
+in DECKS mode.
 
 The screen turns itself off after 10 minutes without use. Touch any control to
 wake it. The timeout is set in *Config → Screen*.
 
 ---
 
-## Coloured buttons: CUE, SETTINGS and PLAY modes
+## Coloured buttons: CUE, SETTINGS, PLAY and DECKS modes
 
 Left to right the buttons are **blue, yellow, green, red**. **Red switches
-the mode**, whatever mode you are in: CUE → SETTINGS → PLAY → CUE. A big label
+the mode**, whatever mode you are in: CUE → SETTINGS → PLAY → DECKS → CUE. A big label
 shows the new mode for a moment, and the main menu item **Btn: …** does the
 same. The instrument starts in **SETTINGS** mode.
 
@@ -90,6 +91,20 @@ Change the sample or the beat, and start or stop the beat, without the menu.
 | Yellow | Start / stop the beat (deck 1), as soon as you press | — |
 | Green | Next sample (deck 2) | Next beat (deck 1) |
 
+### DECKS mode
+
+Play and stop the decks without the menu. Each button acts as soon as you
+press it.
+
+| Button | Press |
+|--------|-------|
+| Blue | Play / stop deck 1 (beats) |
+| Yellow | Both decks: stops both if either is playing, otherwise starts both together |
+| Green | Play / stop deck 2 (samples) |
+
+Stopping brakes like a turntable, as long as *Config → Platter → Brake length*
+says.
+
 ---
 
 ## Menu tree
@@ -116,7 +131,7 @@ HOME SCREEN
 │
 ├── Record Dk2 ................... recording workflow
 │
-├── Btn: CUE/SETTINGS/PLAY ....... next button mode (same as red)
+├── Btn: CUE/SET/PLAY/DECKS ...... next button mode (same as red)
 │
 ├── Config
 │   ├── Sound Settings ........... every ALSA mixer control of the sound card
@@ -160,7 +175,7 @@ start switched off. Every setting can be changed while you play, from
 
 | Section | Settings |
 |---------|----------|
-| Platter | Platter speed, Reverse platter, Touch threshold, Touch by motion, Motion threshold, Motor takeover, Slipmat, Brake length, Tracking gain, Pitch response, Speed assist, Glitch filter |
+| Platter | Platter speed, Reverse platter, Touch threshold, Touch by motion, Slipmat, Brake length, Tracking gain, Pitch response, Speed assist, Glitch filter |
 | Fader & Volume | Fader mode (SC1000 cut / Curve), Cut beats, Open point, Close point, Fader direction, Curve width, Curve shape, Fader smoothing, Soft clip |
 | Screen | Screen off after |
 

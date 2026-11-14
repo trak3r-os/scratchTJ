@@ -99,6 +99,7 @@ static const uint16_t button_colors[4] = {
 static uint16_t function_mode_color(FunctionMode mode) {
     if (mode == FUNC_MODE_SETTINGS) return RGB565(0, 180, 255);
     if (mode == FUNC_MODE_PLAY)     return RGB565(0, 210, 120);
+    if (mode == FUNC_MODE_DECKS)    return RGB565(230, 90, 255);
     return RGB565(255, 200, 0);
 }
 
@@ -125,6 +126,8 @@ static void draw_mode_overlay(void) {
             snprintf(sub, sizeof(sub), "Hold+spin: Vol Pitch Speed");
         else if (mode == FUNC_MODE_PLAY)
             snprintf(sub, sizeof(sub), "< Sample   Beat   Sample >");
+        else if (mode == FUNC_MODE_DECKS)
+            snprintf(sub, sizeof(sub), "Play/stop  Dk1  Both  Dk2");
         else
             snprintf(sub, sizeof(sub), "Tap: jump   Hold: set cue");
     } else {
@@ -201,7 +204,8 @@ static void draw_settings_value_overlay(struct deck *d2) {
 
 /* What each coloured button does in this mode, one label over each
  * button's slot of the cue bar below, in panel order */
-static void draw_function_mode_strip(int y, struct deck *beats) {
+static void draw_function_mode_strip(int y, struct deck *beats,
+                                     struct deck *samples) {
     const char *labels[4];   /* by button index */
     FunctionMode mode = current_function_mode;
 
@@ -213,6 +217,11 @@ static void draw_function_mode_strip(int y, struct deck *beats) {
         labels[BTN_PLAY_PREV] = "Prev";
         labels[BTN_PLAY_NEXT] = "Next";
         labels[BTN_PLAY_START] = beats->player.stopped ? "Start" : "Stop";
+    } else if (mode == FUNC_MODE_DECKS) {
+        /* Six characters fill a slot */
+        labels[BTN_DECKS_1] = beats->player.stopped ? "Play 1" : "Stop 1";
+        labels[BTN_DECKS_2] = samples->player.stopped ? "Play 2" : "Stop 2";
+        labels[BTN_DECKS_BOTH] = "Both";
     } else {
         for (int i = 0; i < 4; i++)
             labels[i] = "Cue";
@@ -505,10 +514,11 @@ void display_home_screen(struct deck *decks[], int deck_count) {
 
     /* ── Mode indicator in title bar ─────────────────────────── */
     if (current_function_mode != FUNC_MODE_CUE) {
+        /* First letter of the mode: S, P or D */
+        char letter[2] = { function_mode_short(current_function_mode)[0], 0 };
         oled_fill_rect(DISPLAY_WIDTH - pw - 18, 4, 10, 8,
                        function_mode_color(current_function_mode));
-        oled_text_color(DISPLAY_WIDTH - pw - 17, 4,
-                        current_function_mode == FUNC_MODE_PLAY ? "P" : "S",
+        oled_text_color(DISPLAY_WIDTH - pw - 17, 4, letter,
                         FONT_SMALL, COLOR_WHITE);
     }
 
@@ -574,7 +584,7 @@ void display_home_screen(struct deck *decks[], int deck_count) {
     draw_deck_compact(d_other, other + 1, other_accent, 176);
 
     /* ── Function mode info strip (y=196..210) ────────────────── */
-    draw_function_mode_strip(196, decks[0]);
+    draw_function_mode_strip(196, decks[0], decks[1]);
 
     /* ── Cue flash logic (y=212, moved from 198) ──────────────── */
     {

@@ -20,6 +20,9 @@
 #define BTN_PLAY_PREV   BTN_BLUE    /* PLAY: previous sample (hold: beat) */
 #define BTN_PLAY_START  BTN_YELLOW  /* PLAY: start / stop the beat */
 #define BTN_PLAY_NEXT   BTN_GREEN   /* PLAY: next sample (hold: beat) */
+#define BTN_DECKS_1     BTN_BLUE    /* DECKS: play / stop Deck 1 */
+#define BTN_DECKS_BOTH  BTN_YELLOW  /* DECKS: play / stop both decks */
+#define BTN_DECKS_2     BTN_GREEN   /* DECKS: play / stop Deck 2 */
 
 /* Button index at each panel position, left to right */
 extern const int button_panel_order[4];
@@ -29,6 +32,7 @@ typedef enum {
     FUNC_MODE_CUE = 0,       /* cue points: tap = jump, hold = set */
     FUNC_MODE_SETTINGS = 1,  /* hold + spin = pitch, platter speed, volume */
     FUNC_MODE_PLAY = 2,      /* change sample/beat, start/stop the beat */
+    FUNC_MODE_DECKS = 3,     /* play / stop Deck 1, Deck 2 or both */
     FUNC_MODE_COUNT
 } FunctionMode;
 
@@ -48,9 +52,6 @@ extern int cue_display_states[4];
 
 /* Hardware state (for home screen) */
 extern bool capIsTouched;
-extern bool motionTouched;  /* Touch by motion On: the platter is being turned */
-extern volatile unsigned long motion_touch_count; /* touches by motion so far */
-extern volatile bool spin_free; /* Motor takeover: the platter spins on its own */
 extern unsigned int ADCs[4];
 extern volatile unsigned int cap_raw;            /* last touch sensor reading */
 extern volatile unsigned long input_activity_ms; /* CLOCK_MONOTONIC ms of the last

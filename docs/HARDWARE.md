@@ -116,7 +116,7 @@ countersunk or M3 × 5 pan head.
 Four momentary push buttons with a 7 mm threaded bushing, mounted through the
 low deck. They connect between Arduino A0–A3 and GND (internal pull-ups, no
 resistors). Use four colours: on the panel, from left to right, **blue,
-yellow, green, red**. Red is the mode button (CUE / SETTINGS / PLAY); what
+yellow, green, red**. Red is the mode button (CUE / SETTINGS / PLAY / DECKS); what
 the other three do depends on the mode, see [USAGE.md](USAGE.md).
 
 ### Platter and axle
@@ -265,12 +265,11 @@ top.
 The serial port resets the Arduino when xwax opens it, and the touch baseline
 is measured right then.
 
-**No touch?** Set *Config → Platter → Touch by motion* to **On** or
-**Motor**. With On, a moving platter counts as touched, and a platter held
-still is released after a fraction of a second. With Motor, the record always
-turns at normal speed and the platter adds to or takes from it. Either lets you
-play while you debug the touch circuit; see [SETTINGS.md](SETTINGS.md#touch-by-motion).
-Turn it off again once touch works.
+**No touch?** Turn on *Config → Platter → Touch by motion*. A moving platter
+then counts as touched, and a platter held still is released after a fraction
+of a second. This lets you play while you debug the touch circuit. Turn it off
+again once touch works, because it makes the record slower to restart after a
+fast spin.
 
 ---
 
