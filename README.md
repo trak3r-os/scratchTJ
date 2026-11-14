@@ -47,9 +47,13 @@ ready-to-print STL files.
 - **Touch-sensitive platter**: capacitive sensing through the bearing tells the
   software when your hand is on the platter, as on a real turntable.
 - **Scratch fader**: an Innofader Mini Pro (hall effect, short throw) read by
-  an Arduino Nano, with an adjustable cut curve.
-- **240×240 colour display + rotary knob**: live platter view, file browser,
-  recording, and every parameter adjustable live.
+  an Arduino Nano. It cuts like an SC1000 (adjustable open/close points, cut
+  beats) or follows an adjustable crossfade curve.
+- **240×240 colour display + rotary knob**: live platter view with a 2-second
+  waveform around the playhead, file browser, recording, and a screen saver.
+- **SC1000 / SC500 feel out of the box**: the same `scsettings.txt` and the same
+  defaults. Every setting can be changed live from the Config menu, and each
+  one is explained on screen and in [docs/SETTINGS.md](docs/SETTINGS.md).
 - **4 cue buttons** with two modes: **CUE** (jump to / set cue points) and
   **SETTINGS** (hold a button and turn the platter to change pitch, platter
   speed, pitch bend or volume).
@@ -100,7 +104,8 @@ Renders of the stepped 9-part case (details and print settings in
   sends them to the Pi as small binary packets over its USB cable.
 - The **Pi** reads the platter angle directly from the MT6701 over I2C, turns
   platter movement into playback position (with a slipmat model when you let
-  go), applies the fader curve, and drives the display and menus.
+  go), sets each deck's volume from the fader, and drives the display and
+  menus.
 - The **AudioInjector** sound card plays both decks and records from its input.
 
 More detail: [docs/HARDWARE.md](docs/HARDWARE.md) and [docs/SOFTWARE.md](docs/SOFTWARE.md).
@@ -163,8 +168,8 @@ dimensions, the reason for each part, and the wiring:
    Step by step: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 5. **Add music**: put beats in `~/beats/` and scratch samples in `~/samples/`
    (WAV 16-bit stereo loads fastest), by USB stick, `scp` or FTP.
-6. **Play**: [docs/USAGE.md](docs/USAGE.md) explains the controls, menus and
-   parameters.
+6. **Play**: [docs/USAGE.md](docs/USAGE.md) explains the controls and menus,
+   and [docs/SETTINGS.md](docs/SETTINGS.md) explains every setting.
 
 ## Documentation
 
@@ -172,7 +177,8 @@ dimensions, the reason for each part, and the wiring:
 |----------|----------|
 | [docs/HARDWARE.md](docs/HARDWARE.md) | Every component, why it was chosen, full wiring and pin map, touch circuit |
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Raspberry Pi OS setup, sound card, build, autostart, Arduino flashing, FTP |
-| [docs/USAGE.md](docs/USAGE.md) | Controls, menu tree, button modes, live parameters |
+| [docs/USAGE.md](docs/USAGE.md) | Controls, home screen, menu tree, button modes |
+| [docs/SETTINGS.md](docs/SETTINGS.md) | Every Config menu setting in plain English, SC1000 values, `scsettings.txt` and `config.cfg` keys |
 | [docs/SOFTWARE.md](docs/SOFTWARE.md) | Threads, modules, serial protocol, configuration files |
 | [enclosure/README.md](enclosure/README.md) | Printed parts, print settings, screw list, platter stack, assembly, editing the model |
 | [hw_test/README.md](hw_test/README.md) | Hardware test programs |

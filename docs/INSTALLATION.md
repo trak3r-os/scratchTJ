@@ -262,7 +262,7 @@ stty -F /dev/ttyUSB0 500000 raw && xxd /dev/ttyUSB0 | head   # raw Arduino packe
 | No sound | `aplay -l` must list the AudioInjector as **card 1**; check the overlay, keep on-board audio on, check `amixer -c 1` |
 | Blank display | SPI enabled? Check DC (GPIO 24) and RES (GPIO 25) |
 | Platter does nothing | `i2cdetect -y 1` must show `06`; check the magnet is diametric and 1 mm over the chip |
-| Platter works only while moving / never "touched" | Check the touch wire (bearing seat groove, and the short wire from the bolt head to the platter); do not touch the platter at start-up; set `motion_touch = 1` to play meanwhile |
+| Platter works only while moving / never "touched" | Check the touch wire (bearing seat groove, and the short wire from the bolt head to the platter); do not touch the platter at start-up; turn on *Config → Platter → Touch by motion* to play meanwhile |
 | Fader or buttons dead | `/dev/ttyUSB0` must exist; re-flash the Arduino; nothing else may hold the port |
 | Permission denied | Run with `sudo` |
 | WAV plays as noise | The file has metadata: convert with `-bitexact -map_metadata -1` |

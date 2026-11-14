@@ -5,7 +5,7 @@
 - [Cue buttons: CUE and SETTINGS modes](#cue-buttons-cue-and-settings-modes)
 - [Menu tree](#menu-tree)
 - [Recording](#recording)
-- [Live parameters](#live-parameters)
+- [Settings](#settings)
 - [Saving settings](#saving-settings)
 
 ---
@@ -15,7 +15,7 @@
 | Control | Action |
 |---------|--------|
 | **Platter** | Touch and move it to scratch the active deck. Let go and it runs on, pulled back to speed like a record on a slipmat |
-| **Fader** | Cuts the scratch deck in and out |
+| **Fader** | Cuts the decks in and out (SC1000-style hard cut, or a crossfade curve: see [SETTINGS.md](SETTINGS.md#fader-mode)) |
 | **Knob, turn** | Scroll menus / change a value. From the home screen, opens the main menu |
 | **KEY0 key** | Select / confirm / enter. From the home screen, opens the main menu |
 | **Knob, short press** | Back / cancel |
@@ -31,12 +31,19 @@ The home screen shows the active deck:
 - a live platter drawing with the fader arc, the position needles and a glow
   while you touch it, plus elapsed time;
 - an info column with speed, pitch, motor and slip state;
-- a fader history graph and a progress bar;
+- a waveform strip right of the platter: about 2 seconds of the deck around
+  the playhead (the white line), so you can see where a sound starts and
+  ends. Cue points show as dotted lines in their button colour. The waveform
+  turns grey while the fader has cut the deck;
+- a progress bar;
 - a compact strip for the other deck;
 - a strip showing what the cue buttons do in the current mode, and the cue
   points as a coloured bar.
 
 The title bar shows **[S]** while the buttons are in SETTINGS mode.
+
+The screen turns itself off after 10 minutes without use. Touch any control to
+wake it. The timeout is set in *Config → Screen*.
 
 ---
 
@@ -61,7 +68,7 @@ Cue points are saved per track.
 | 1 | Red | Pitch | Hold and turn the platter (0.25× to 4×) |
 | 2 | Green | Platter speed | Hold and turn the platter |
 | 3 | Yellow | Pitch bend | Hold and turn the platter (±8 %, for matching tempo) |
-| 4 | Blue | Volume (gain) | Hold and turn the platter (up to ×8, soft-clipped) |
+| 4 | Blue | Volume (gain) | Hold and turn the platter (up to ×8; above ×1 it clips, see [Soft clip](SETTINGS.md#soft-clip)) |
 
 While you hold a button and turn the platter, an overlay shows the parameter,
 its value and a gauge, and the audio position stays frozen. The settings are
@@ -97,10 +104,13 @@ HOME SCREEN
 │
 ├── Config
 │   ├── Sound Settings ........... every ALSA mixer control of the sound card
-│   ├── Global Settings .......... every live parameter (table below);
-│   │                              fader parameters show the curve graph
+│   ├── Platter .................. speed, direction, touch sensor, slipmat,
+│   │                              brake, tracking, speed assist, glitch filter
+│   ├── Fader & Volume ........... fader mode, cut beats, open/close points,
+│   │                              direction, curve, smoothing, soft clip
+│   ├── Screen ................... screen-off timer
 │   ├── Save Config .............. write ~/.scratchtj/config.cfg
-│   ├── Reset Defaults ........... back to factory values
+│   ├── Reset Defaults ........... back to the defaults (asks first)
 │   ├── Restart (rescan files) ... restart the program, re-reading beats/ and samples/
 │   └── Reboot Pi
 │
@@ -126,35 +136,42 @@ when the Pi reboots. Copy the ones you want to keep.
 
 ---
 
-## Live parameters
+## Settings
 
-All of these can be changed while playing, from *Config → Global Settings*.
+ScratchTJ starts out playing like an SC1000 / SC500, and the extras it adds all
+start switched off. Every setting can be changed while you play, from
+*Config → Platter*, *Config → Fader & Volume* and *Config → Screen*:
 
-| Parameter | Default | Range | Step | What it does |
-|-----------|---------|-------|------|--------------|
-| Fad Factor | 0.1 | 0.01–10 | 0.01 | Fader curve transition point |
-| Fad Power | 0.2 | 0.01–10 | 0.01 | Fader curve exponent |
-| Fad Switch | 1 | 0–1 | 1 | Fader direction (0 = normal, 1 = reversed) |
-| fader_sharp | 1.0 | 0–1 | 0.05 | Fader sharpness |
-| slippiness | 200 | 1–3000 | 25 | Slipmat feel: how fast the record returns to speed after you let go |
-| target_pitch | 40 | 1–240 | 1 | Position tracking gain |
-| pitch_filter | 0.1 | 0.01–1 | 0.01 | Pitch low-pass (small = smooth, 1 = instant) |
-| vel_ff | 1.0 | 0–1 | 0.1 | Platter velocity feed-forward: 1 = audio locked to your hand, 0 = position tracking only (then `target_pitch` and `pitch_filter` govern the feel) |
-| platterspeed | 9100 | 1–32768 | 256 | Platter-to-audio ratio: how much audio one turn of the platter covers |
-| blipthreshold | 400 | 50–2048 | 50 | Rejects sensor glitches larger than this |
-| brakespeed | 3000 | 1–10000 | 500 | How fast the deck stops on Start/Stop |
-| motion_touch | 0 | 0–1 | 1 | 1 = a moving platter counts as touched (play without the touch sensor); a platter held still is released after 0.12 s |
-| fhist_secs | 2.0 | 0.1–120 | 0.1 | Time window of the fader history graph, in seconds |
+| Section | Settings |
+|---------|----------|
+| Platter | Platter speed, Reverse platter, Touch threshold, Touch by motion, Slipmat, Brake length, Tracking gain, Pitch response, Speed assist, Glitch filter |
+| Fader & Volume | Fader mode (SC1000 cut / Curve), Cut beats, Open point, Close point, Fader direction, Curve width, Curve shape, Fader smoothing, Soft clip |
+| Screen | Screen off after |
+
+How to change a setting:
+
+1. Turn the knob to pick a setting, then press **KEY0** to open it.
+2. The edit screen shows:
+   - the value;
+   - a live reading where it helps (touch sensor, fader position, record rpm);
+   - the default;
+   - a short explanation.
+3. Turn the knob to change the value. It takes effect straight away.
+4. Press **KEY0** to keep the new value, or push the knob to undo.
+
+**[SETTINGS.md](SETTINGS.md)** explains every setting in plain English, with the
+SC1000 values and fixes for common problems.
 
 ---
 
 ## Saving settings
 
-- **Config → Save Config** writes every live parameter to
-  `~/.scratchtj/config.cfg`; it is loaded at start-up. SETTINGS-mode changes
-  are saved automatically.
-- **Config → Reset Defaults** restores the values in the table above.
-- Start-up options that are not live parameters (audio buffer size, fader
-  hysteresis points, pitch range) are in
-  [`software/scsettings.txt`](../software/scsettings.txt). See
-  [SOFTWARE.md](SOFTWARE.md#configuration-files).
+- Changes made in a Config section are saved to `~/.scratchtj/config.cfg` when
+  you leave the section. SETTINGS-mode changes are saved when you release the
+  button. *Config → Save Config* saves everything at once.
+- **Config → Reset Defaults** asks first, then goes back to the defaults.
+- [`software/scsettings.txt`](../software/scsettings.txt) holds start-up
+  options (audio buffer size, pitch range, button mappings). It also sets the
+  defaults for platter speed, slipmat, brake, fader points and cut beats. A
+  value saved from the Config menu overrides it. See
+  [SETTINGS.md](SETTINGS.md#scsettingstxt-reference).
